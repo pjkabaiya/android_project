@@ -92,7 +92,8 @@ public class PassengerActivity extends AppCompatActivity implements OnMapReadyCa
 
     private void listenForLocationUpdates() {
         if (SocketManager.getSocket() != null) {
-            SocketManager.getSocket().on("locationUpdate", args -> {
+            // Updated to match backend "vehicle-location" broadcast event
+            SocketManager.getSocket().on("vehicle-location", args -> {
                 if (args.length > 0) {
                     try {
                         JSONObject data = (JSONObject) args[0];

@@ -10,15 +10,17 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 
 public interface ApiService {
+    // These routes are at the root in your server.js
     @POST("users/register")
     Call<User> registerUser(@Body User user);
 
     @GET("users/{firebaseUid}")
     Call<User> getUserProfile(@Path("firebaseUid") String firebaseUid);
 
-    @POST("reservations")
+    // These routes are mounted under /api in your server.js
+    @POST("api/reservations")
     Call<Reservation> requestReservation(@Body Reservation reservation);
 
-    @PATCH("reservations/{id}/status")
+    @PATCH("api/reservations/{id}/status")
     Call<Reservation> updateReservationStatus(@Path("id") String id, @Body String status);
 }

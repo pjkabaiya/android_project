@@ -5,6 +5,6 @@ const UserSchema = new mongoose.Schema({
   name: { type: String },
   email: { type: String },
   role: { type: String, enum: ['passenger','driver','admin'], default: 'passenger' }
-}, { timestamps: true });
+}, { timestamps: true, toJSON: { virtuals: true, transform: (doc, ret) => { ret.id = ret._id; delete ret._id; delete ret.__v; } } });
 
 module.exports = mongoose.model('User', UserSchema);

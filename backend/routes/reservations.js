@@ -8,12 +8,13 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/', async (req, res) => {
-  const docs = await Reservation.find().populate('passengerId vehicleId');
+  const docs = await Reservation.find();
   res.json(docs);
 });
 
-router.patch('/:id', async (req, res) => {
-  const doc = await Reservation.findByIdAndUpdate(req.params.id, req.body, { new: true });
+router.patch('/:id/status', async (req, res) => {
+  const doc = await Reservation.findByIdAndUpdate(req.params.id, { status: req.body }, { new: true });
+  if (!doc) return res.status(404).json({ error: 'Reservation not found' });
   res.json(doc);
 });
 

@@ -89,13 +89,15 @@ public class DriverActivity extends AppCompatActivity {
     }
 
     private void sendSeatUpdate() {
+        // Updated to match backend "reservation-update" event
         if (SocketManager.getSocket() != null && SocketManager.getSocket().connected()) {
             try {
                 JSONObject data = new JSONObject();
                 data.put("occupiedSeats", occupiedSeats);
                 data.put("availableSeats", MAX_SEATS - occupiedSeats);
                 data.put("vehicleId", "test_vehicle_id");
-                SocketManager.getSocket().emit("seatUpdate", data);
+                data.put("type", "seat_update"); 
+                SocketManager.getSocket().emit("reservation-update", data);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -128,13 +130,15 @@ public class DriverActivity extends AppCompatActivity {
     }
 
     private void updateLocationOnServer(Location location) {
+        // Updated to match backend "location-update" event
         if (SocketManager.getSocket() != null && SocketManager.getSocket().connected()) {
             try {
                 JSONObject data = new JSONObject();
                 data.put("latitude", location.getLatitude());
                 data.put("longitude", location.getLongitude());
                 data.put("vehicleId", "test_vehicle_id");
-                SocketManager.getSocket().emit("locationUpdate", data);
+                data.put("timestamp", System.currentTimeMillis());
+                SocketManager.getSocket().emit("location-update", data);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
