@@ -6,19 +6,47 @@
     android:orientation="vertical"
     android:padding="24dp">
 
-    <TextView
-        android:id="@+id/titleText"
+    <ProgressBar
+        android:id="@+id/loadingProgress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Smart Matatu"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+        android:layout_marginBottom="16dp" />
 
     <TextView
+        android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="Firebase + Maps + Live Tracking skeleton"
-        android:textSize="16sp" />
+        android:text="Checking user role..."
+        android:textSize="18sp" />
+
+    <!-- Fallback buttons if fetch fails -->
+    <LinearLayout
+        android:id="@+id/fallbackLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginTop="32dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Could not fetch role automatically."
+            android:layout_gravity="center"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnPassengerFallback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Continue as Passenger" />
+
+        <Button
+            android:id="@+id/btnDriverFallback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Continue as Driver"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
 
 </LinearLayout>

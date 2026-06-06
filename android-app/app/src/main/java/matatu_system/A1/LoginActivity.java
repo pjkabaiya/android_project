@@ -53,8 +53,7 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         registerTextView.setOnClickListener(v -> {
-            // Start RegisterActivity (to be created)
-            Toast.makeText(this, "Registration coming soon", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
         });
     }
 }

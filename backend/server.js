@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const admin = require('firebase-admin');
+const User = require('./models/User');
 
 dotenv.config();
 
@@ -44,6 +45,29 @@ const io = new Server(server, {
 
 // Basic routes
 app.get('/', (req, res) => res.json({ ok: true, name: 'Smart Matatu Backend' }));
+
+// User routes (called by Android app)
+app.post('/users/register', async (req, res) => {
+  try {
+    const { firebaseUid, name, email, role } = req.body;
+    let user = await User.findOne({ firebaseUid });
+    if (user) return res.status(200).json(user);
+    user = await User.create({ firebaseUid, name, email, role: role || 'passenger' });
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/users/:firebaseUid', async (req, res) => {
+  try {
+    const user = await User.findOne({ firebaseUid: req.params.firebaseUid });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
 // Mount API routes (they'll be added in routes folder)
 app.use('/api/auth', require('./routes/auth'));

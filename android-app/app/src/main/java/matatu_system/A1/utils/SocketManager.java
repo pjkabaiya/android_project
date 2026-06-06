@@ -9,7 +9,7 @@ import io.socket.client.Socket;
 
 public class SocketManager {
     private static final String TAG = "SocketManager";
-    private static final String SOCKET_URL = "http://10.0.2.2:5000"; // Same as API BASE_URL
+    private static final String SOCKET_URL = "https://android-project-gb6e.onrender.com"; // Live backend URL
     private static Socket mSocket;
 
     public static synchronized Socket getSocket() {
