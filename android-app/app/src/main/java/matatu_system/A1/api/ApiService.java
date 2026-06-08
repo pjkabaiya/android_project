@@ -32,7 +32,10 @@ public interface ApiService {
     Call<Trip> createTrip(@Body Trip trip);
 
     @GET("api/trips")
-    Call<List<Trip>> searchTrips(@Query("route") String route);
+    Call<List<Trip>> searchTrips(@Query("route") String route, @Query("driverId") String driverId);
+
+    @GET("api/trips/requests")
+    Call<List<TripRequest>> getPassengerRequests(@Query("passengerId") String passengerId);
 
     @PATCH("api/trips/{id}")
     Call<Trip> updateTrip(@Path("id") String id, @Body Map<String, Object> updates);

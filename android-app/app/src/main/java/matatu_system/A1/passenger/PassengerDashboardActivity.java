@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import matatu_system.A1.R;
@@ -29,12 +30,14 @@ public class PassengerDashboardActivity extends AppCompatActivity {
 
     private EditText editFrom, editTo, editPickupPoint;
     private Button btnSearch, btnRequest;
-    private ListView vehicleList;
+    private ListView vehicleList, activeRequestsList;
     private TextView txtResultsHeader, txtNoResults, txtSelectedVehicle;
-    private View requestCard;
+    private View requestCard, activeRequestsCard;
 
     private List<Trip> activeTrips;
     private String selectedTripId;
+
+    private static final String PASSENGER_ID = "passenger_" + System.currentTimeMillis();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,11 +54,47 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         txtNoResults = findViewById(R.id.txtNoResults);
         txtSelectedVehicle = findViewById(R.id.txtSelectedVehicle);
         requestCard = findViewById(R.id.requestCard);
+        activeRequestsCard = findViewById(R.id.activeRequestsCard);
+        activeRequestsList = findViewById(R.id.activeRequestsList);
 
         btnSearch.setOnClickListener(v -> searchTrips());
         btnRequest.setOnClickListener(v -> requestRide());
 
         SocketManager.establishConnection();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadActiveRequests();
+    }
+
+    private void loadActiveRequests() {
+        RetrofitClient.getApiService().getPassengerRequests(PASSENGER_ID).enqueue(new Callback<List<TripRequest>>() {
+            @Override
+            public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    showActiveRequests(response.body());
+                } else {
+                    activeRequestsCard.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<TripRequest>> call, Throwable t) {
+                activeRequestsCard.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void showActiveRequests(List<TripRequest> requests) {
+        activeRequestsCard.setVisibility(View.VISIBLE);
+        List<String> items = new ArrayList<>();
+        for (TripRequest req : requests) {
+            items.add("Trip: " + req.getTripId() + " | Pickup: " + req.getPickupPoint());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
+        activeRequestsList.setAdapter(adapter);
     }
 
     private void searchTrips() {
@@ -68,7 +107,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         }
 
         String route = from + " " + to;
-        RetrofitClient.getApiService().searchTrips(route).enqueue(new Callback<List<Trip>>() {
+        RetrofitClient.getApiService().searchTrips(route, null).enqueue(new Callback<List<Trip>>() {
             @Override
             public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
@@ -124,13 +163,14 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        TripRequest req = new TripRequest(selectedTripId, "passenger_" + System.currentTimeMillis(), pickup);
+        TripRequest req = new TripRequest(selectedTripId, PASSENGER_ID, pickup);
         RetrofitClient.getApiService().createTripRequest(selectedTripId, req).enqueue(new Callback<TripRequest>() {
             @Override
             public void onResponse(Call<TripRequest> call, Response<TripRequest> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(PassengerDashboardActivity.this, "Ride requested!", Toast.LENGTH_LONG).show();
                     requestCard.setVisibility(View.GONE);
+                    loadActiveRequests();
                     sendSocketRequest(pickup);
                 }
             }

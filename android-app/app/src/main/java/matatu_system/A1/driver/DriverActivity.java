@@ -2,8 +2,10 @@ package matatu_system.A1.driver;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -12,7 +14,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import matatu_system.A1.R;
@@ -27,11 +31,16 @@ public class DriverActivity extends AppCompatActivity {
 
     private EditText editPlate, editRoute, editSeats;
     private Button btnStartTrip, btnEndTrip, btnPlus, btnMinus;
-    private View setupCard, tripCard, requestsCard;
+    private View setupCard, tripCard, requestsCard, currentRoutesCard;
     private TextView txtTripId, txtPlateDisplay, txtRouteDisplay, txtSeatsDisplay, txtRequestInfo;
+    private ListView currentRoutesList;
 
     private String currentTripId;
     private int availableSeats = 14;
+    private List<Trip> driverTrips;
+    private ArrayAdapter<String> routesAdapter;
+
+    private static final String DRIVER_ID = "driver_001";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +57,8 @@ public class DriverActivity extends AppCompatActivity {
         setupCard = findViewById(R.id.setupCard);
         tripCard = findViewById(R.id.tripCard);
         requestsCard = findViewById(R.id.requestsCard);
+        currentRoutesCard = findViewById(R.id.currentRoutesCard);
+        currentRoutesList = findViewById(R.id.currentRoutesList);
         txtTripId = findViewById(R.id.txtTripId);
         txtPlateDisplay = findViewById(R.id.txtPlateDisplay);
         txtRouteDisplay = findViewById(R.id.txtRouteDisplay);
@@ -63,6 +74,56 @@ public class DriverActivity extends AppCompatActivity {
         listenForRequests();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadDriverTrips();
+    }
+
+    private void loadDriverTrips() {
+        RetrofitClient.getApiService().searchTrips(null, DRIVER_ID).enqueue(new Callback<List<Trip>>() {
+            @Override
+            public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    driverTrips = response.body();
+                    showCurrentRoutes();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Trip>> call, Throwable t) {}
+        });
+    }
+
+    private void showCurrentRoutes() {
+        if (driverTrips == null || driverTrips.isEmpty()) {
+            currentRoutesCard.setVisibility(View.GONE);
+            return;
+        }
+        currentRoutesCard.setVisibility(View.VISIBLE);
+
+        List<String> items = new ArrayList<>();
+        for (Trip t : driverTrips) {
+            items.add(t.getNumberPlate() + " - " + t.getRoute() + " (" + t.getAvailableSeats() + " seats)");
+        }
+
+        routesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
+        currentRoutesList.setAdapter(routesAdapter);
+
+        currentRoutesList.setOnItemClickListener((parent, view, position, id) -> {
+            Trip trip = driverTrips.get(position);
+            resumeTrip(trip);
+        });
+    }
+
+    private void resumeTrip(Trip trip) {
+        currentTripId = trip.getId();
+        availableSeats = trip.getAvailableSeats();
+        showTripActive(trip.getNumberPlate(), trip.getRoute());
+        joinTripRoom();
+        Toast.makeText(this, "Resumed trip: " + trip.getNumberPlate(), Toast.LENGTH_SHORT).show();
+    }
+
     private void startTrip() {
         String plate = editPlate.getText().toString().trim();
         String route = editRoute.getText().toString().trim();
@@ -75,7 +136,7 @@ public class DriverActivity extends AppCompatActivity {
 
         availableSeats = seatsStr.isEmpty() ? 14 : Integer.parseInt(seatsStr);
 
-        Trip trip = new Trip(plate, route, availableSeats, "driver_001");
+        Trip trip = new Trip(plate, route, availableSeats, DRIVER_ID);
         RetrofitClient.getApiService().createTrip(trip).enqueue(new Callback<Trip>() {
             @Override
             public void onResponse(Call<Trip> call, Response<Trip> response) {
@@ -83,6 +144,7 @@ public class DriverActivity extends AppCompatActivity {
                     currentTripId = response.body().getId();
                     showTripActive(plate, route);
                     joinTripRoom();
+                    loadDriverTrips();
                     Toast.makeText(DriverActivity.this, "Trip started!", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(DriverActivity.this, "Failed to start trip", Toast.LENGTH_SHORT).show();
@@ -152,6 +214,7 @@ public class DriverActivity extends AppCompatActivity {
                 setupCard.setVisibility(View.VISIBLE);
                 editPlate.setText("");
                 editRoute.setText("");
+                loadDriverTrips();
                 Toast.makeText(DriverActivity.this, "Trip ended", Toast.LENGTH_SHORT).show();
             }
 
