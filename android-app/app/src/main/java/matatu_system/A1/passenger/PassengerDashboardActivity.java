@@ -1,5 +1,10 @@
 package matatu_system.A1.passenger;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -10,9 +15,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,16 +43,23 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     private Button btnSearch, btnRequest;
     private ListView vehicleList, activeRequestsList;
     private TextView txtResultsHeader, txtNoResults, txtSelectedVehicle;
-    private View requestCard, activeRequestsCard;
+    private View requestCard, activeRequestsCard, passengerMapCard;
+    private MapView passengerMap;
 
     private List<Trip> activeTrips;
     private String selectedTripId;
+    private String trackedTripId;
+    private Marker vehicleMarker;
 
     private static final String PASSENGER_ID = "passenger_" + System.currentTimeMillis();
+    private LocationManager passengerLocationManager;
+    private double currentLat = -1.286389;
+    private double currentLng = 36.817223;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Configuration.getInstance().setUserAgentValue(getPackageName());
         setContentView(R.layout.activity_passenger_dashboard);
 
         editFrom = findViewById(R.id.editFrom);
@@ -56,17 +74,42 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         requestCard = findViewById(R.id.requestCard);
         activeRequestsCard = findViewById(R.id.activeRequestsCard);
         activeRequestsList = findViewById(R.id.activeRequestsList);
+        passengerMapCard = findViewById(R.id.passengerMapCard);
+        passengerMap = findViewById(R.id.passengerMap);
+
+        passengerMap.setTileSource(TileSourceFactory.MAPNIK);
+        passengerMap.setMultiTouchControls(true);
+        passengerMap.getController().setZoom(15.0);
+        passengerMap.getController().setCenter(new GeoPoint(-1.286389, 36.817223));
 
         btnSearch.setOnClickListener(v -> searchTrips());
         btnRequest.setOnClickListener(v -> requestRide());
 
         SocketManager.establishConnection();
+        listenForVehicleLocation();
+
+        passengerLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            Location loc = passengerLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (loc != null) { currentLat = loc.getLatitude(); currentLng = loc.getLongitude(); }
+            passengerLocationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, location -> {
+                currentLat = location.getLatitude();
+                currentLng = location.getLongitude();
+            }, null);
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        passengerMap.onResume();
         loadActiveRequests();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        passengerMap.onPause();
     }
 
     private void loadActiveRequests() {
@@ -75,6 +118,9 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     showActiveRequests(response.body());
+                    TripRequest latest = response.body().get(response.body().size() - 1);
+                    trackedTripId = latest.getTripId();
+                    passengerMapCard.setVisibility(View.VISIBLE);
                 } else {
                     activeRequestsCard.setVisibility(View.GONE);
                 }
@@ -91,7 +137,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         activeRequestsCard.setVisibility(View.VISIBLE);
         List<String> items = new ArrayList<>();
         for (TripRequest req : requests) {
-            items.add("Trip: " + req.getTripId() + " | Pickup: " + req.getPickupPoint());
+            items.add("Pickup: " + req.getPickupPoint() + " (" + req.getStatus() + ")");
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
         activeRequestsList.setAdapter(adapter);
@@ -164,12 +210,16 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         }
 
         TripRequest req = new TripRequest(selectedTripId, PASSENGER_ID, pickup);
+        req.setPassengerLat(currentLat);
+        req.setPassengerLng(currentLng);
         RetrofitClient.getApiService().createTripRequest(selectedTripId, req).enqueue(new Callback<TripRequest>() {
             @Override
             public void onResponse(Call<TripRequest> call, Response<TripRequest> response) {
                 if (response.isSuccessful()) {
+                    trackedTripId = selectedTripId;
                     Toast.makeText(PassengerDashboardActivity.this, "Ride requested!", Toast.LENGTH_LONG).show();
                     requestCard.setVisibility(View.GONE);
+                    passengerMapCard.setVisibility(View.VISIBLE);
                     loadActiveRequests();
                     sendSocketRequest(pickup);
                 }
@@ -189,9 +239,43 @@ public class PassengerDashboardActivity extends AppCompatActivity {
                 data.put("tripId", selectedTripId);
                 data.put("pickupPoint", pickup);
                 data.put("type", "passenger_request");
+                data.put("passengerLat", currentLat);
+                data.put("passengerLng", currentLng);
                 SocketManager.getSocket().emit("reservation-update", data);
             } catch (JSONException e) { e.printStackTrace(); }
         }
+    }
+
+    private void listenForVehicleLocation() {
+        if (SocketManager.getSocket() != null) {
+            SocketManager.getSocket().on("vehicle-location", args -> {
+                if (args.length > 0) {
+                    try {
+                        JSONObject data = (JSONObject) args[0];
+                        String tripId = data.optString("tripId");
+                        if (tripId.equals(trackedTripId)) {
+                            double lat = data.getDouble("latitude");
+                            double lng = data.getDouble("longitude");
+                            runOnUiThread(() -> updateVehicleMarker(lat, lng));
+                        }
+                    } catch (JSONException e) { e.printStackTrace(); }
+                }
+            });
+        }
+    }
+
+    private void updateVehicleMarker(double lat, double lng) {
+        if (passengerMap == null) return;
+        GeoPoint pos = new GeoPoint(lat, lng);
+        passengerMap.getController().setCenter(pos);
+        if (vehicleMarker == null) {
+            vehicleMarker = new Marker(passengerMap);
+            vehicleMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            vehicleMarker.setTitle("Your Matatu");
+            passengerMap.getOverlays().add(vehicleMarker);
+        }
+        vehicleMarker.setPosition(pos);
+        passengerMap.invalidate();
     }
 
     @Override
