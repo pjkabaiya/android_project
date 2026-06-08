@@ -40,6 +40,9 @@ public interface ApiService {
     @PATCH("api/trips/{id}")
     Call<Trip> updateTrip(@Path("id") String id, @Body Map<String, Object> updates);
 
+    @GET("api/trips/{id}/requests")
+    Call<List<TripRequest>> getTripRequests(@Path("id") String tripId);
+
     @POST("api/trips/{id}/requests")
     Call<TripRequest> createTripRequest(@Path("id") String tripId, @Body TripRequest request);
 }

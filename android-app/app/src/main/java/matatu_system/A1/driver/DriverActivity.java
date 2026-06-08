@@ -22,6 +22,7 @@ import java.util.Map;
 import matatu_system.A1.R;
 import matatu_system.A1.api.RetrofitClient;
 import matatu_system.A1.models.Trip;
+import matatu_system.A1.models.TripRequest;
 import matatu_system.A1.utils.SocketManager;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -121,6 +122,7 @@ public class DriverActivity extends AppCompatActivity {
         availableSeats = trip.getAvailableSeats();
         showTripActive(trip.getNumberPlate(), trip.getRoute());
         joinTripRoom();
+        loadTripRequests();
         Toast.makeText(this, "Resumed trip: " + trip.getNumberPlate(), Toast.LENGTH_SHORT).show();
     }
 
@@ -166,6 +168,7 @@ public class DriverActivity extends AppCompatActivity {
         txtPlateDisplay.setText("Plate: " + plate);
         txtRouteDisplay.setText("Route: " + route);
         updateSeatDisplay();
+        loadTripRequests();
     }
 
     private void joinTripRoom() {
@@ -225,6 +228,25 @@ public class DriverActivity extends AppCompatActivity {
         });
     }
 
+    private void loadTripRequests() {
+        if (currentTripId == null) return;
+        RetrofitClient.getApiService().getTripRequests(currentTripId).enqueue(new Callback<List<TripRequest>>() {
+            @Override
+            public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    TripRequest latest = response.body().get(response.body().size() - 1);
+                    runOnUiThread(() -> {
+                        txtRequestInfo.setText("Passenger waiting at: " + latest.getPickupPoint());
+                        txtRequestInfo.setTextColor(getColor(android.R.color.holo_orange_dark));
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<TripRequest>> call, Throwable t) {}
+        });
+    }
+
     private void listenForRequests() {
         if (SocketManager.getSocket() != null) {
             SocketManager.getSocket().on("reservation-update", args -> {
@@ -249,6 +271,6 @@ public class DriverActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        SocketManager.closeConnection();
+        SocketManager.releaseConnection();
     }
 }

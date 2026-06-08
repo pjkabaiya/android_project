@@ -68,6 +68,15 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
+router.get('/:id/requests', async (req, res) => {
+  try {
+    const requests = await TripRequest.find({ tripId: req.params.id });
+    res.json(requests);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.post('/:id/requests', async (req, res) => {
   try {
     const request = await TripRequest.create({ ...req.body, tripId: req.params.id });
