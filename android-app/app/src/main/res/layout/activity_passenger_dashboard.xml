@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="#F5F5F5">
+
+    <ImageView
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@android:drawable/ic_dialog_map"
+        android:layout_marginTop="48dp"
+        app:tint="@color/design_default_color_primary" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Where are you going?"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp"
+        android:textColor="#333333"/>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <EditText
+                android:id="@+id/editPickup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter Pickup Point"
+                android:drawableStart="@android:drawable/ic_menu_myplaces"
+                android:drawablePadding="12dp"
+                android:background="@android:color/transparent"
+                android:padding="12dp"/>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#DDDDDD"
+                android:layout_marginVertical="8dp"/>
+
+            <EditText
+                android:id="@+id/editDestination"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter Destination"
+                android:drawableStart="@android:drawable/ic_menu_send"
+                android:drawablePadding="12dp"
+                android:background="@android:color/transparent"
+                android:padding="12dp"/>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <Button
+        android:id="@+id/btnFindMatatu"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Find Available Matatus"
+        android:layout_marginTop="32dp"
+        android:textAllCaps="false"
+        android:textSize="18sp"
+        app:cornerRadius="12dp"/>
+
+</LinearLayout>

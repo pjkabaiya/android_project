@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/txtPassengerId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Passenger: User123"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txtReservationDetails"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="From: Point A To: Point B"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnAcceptReservation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Accept"
+                style="?android:attr/buttonBarButtonStyle" />
+
+            <Button
+                android:id="@+id/btnRejectReservation"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Reject"
+                style="?android:attr/buttonBarButtonStyle"
+                android:textColor="@android:color/holo_red_dark" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
