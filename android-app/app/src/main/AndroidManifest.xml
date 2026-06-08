@@ -23,6 +23,7 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".passenger.PassengerDashboardActivity" />
         <activity android:name=".driver.DriverActivity" />
+        <activity android:name=".map.MapViewActivity" />
 
     </application>
 

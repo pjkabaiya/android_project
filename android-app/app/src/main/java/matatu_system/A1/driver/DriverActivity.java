@@ -1,10 +1,6 @@
 package matatu_system.A1.driver;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -15,15 +11,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.Marker;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +22,7 @@ import java.util.Map;
 
 import matatu_system.A1.R;
 import matatu_system.A1.api.RetrofitClient;
+import matatu_system.A1.map.MapViewActivity;
 import matatu_system.A1.models.Trip;
 import matatu_system.A1.models.TripRequest;
 import matatu_system.A1.utils.SocketManager;
@@ -43,25 +34,23 @@ public class DriverActivity extends AppCompatActivity {
 
     private EditText editPlate, editRoute, editSeats;
     private Button btnStartTrip, btnEndTrip, btnPlus, btnMinus;
-    private View setupCard, tripCard, requestsCard, currentRoutesCard, mapCard;
+    private View setupCard, tripCard, requestsCard, currentRoutesCard;
     private TextView txtTripId, txtPlateDisplay, txtRouteDisplay, txtSeatsDisplay;
     private ListView currentRoutesList, requestsListView;
-    private MapView driverMap;
 
     private String currentTripId;
+    private String currentPlate;
+    private String currentRoute;
     private int availableSeats = 14;
     private List<Trip> driverTrips;
     private List<TripRequest> pendingRequests;
     private ArrayAdapter<String> routesAdapter, requestsAdapter;
 
     private static final String DRIVER_ID = "driver_001";
-    private LocationManager locationManager;
-    private LocationListener locationListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Configuration.getInstance().setUserAgentValue(getPackageName());
         setContentView(R.layout.activity_driver);
 
         editPlate = findViewById(R.id.editPlateNumber);
@@ -75,19 +64,12 @@ public class DriverActivity extends AppCompatActivity {
         tripCard = findViewById(R.id.tripCard);
         requestsCard = findViewById(R.id.requestsCard);
         currentRoutesCard = findViewById(R.id.currentRoutesCard);
-        mapCard = findViewById(R.id.mapCard);
         currentRoutesList = findViewById(R.id.currentRoutesList);
         requestsListView = findViewById(R.id.requestsListView);
-        driverMap = findViewById(R.id.driverMap);
         txtTripId = findViewById(R.id.txtTripId);
         txtPlateDisplay = findViewById(R.id.txtPlateDisplay);
         txtRouteDisplay = findViewById(R.id.txtRouteDisplay);
         txtSeatsDisplay = findViewById(R.id.txtSeatsDisplay);
-
-        driverMap.setTileSource(TileSourceFactory.MAPNIK);
-        driverMap.setMultiTouchControls(true);
-        driverMap.getController().setZoom(13.0);
-        driverMap.getController().setCenter(new GeoPoint(-1.286389, 36.817223));
 
         btnStartTrip.setOnClickListener(v -> startTrip());
         btnEndTrip.setOnClickListener(v -> endTrip());
@@ -96,31 +78,12 @@ public class DriverActivity extends AppCompatActivity {
 
         SocketManager.establishConnection();
         listenForRequests();
-        listenForVehicleLocation();
-
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        locationListener = new LocationListener() {
-            @Override public void onLocationChanged(Location loc) {
-                sendLocationUpdate(loc.getLatitude(), loc.getLongitude());
-                updateDriverMapLocation(loc.getLatitude(), loc.getLongitude());
-            }
-            @Override public void onStatusChanged(String p, int i, Bundle b) {}
-            @Override public void onProviderEnabled(String p) {}
-            @Override public void onProviderDisabled(String p) {}
-        };
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        driverMap.onResume();
         loadDriverTrips();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        driverMap.onPause();
     }
 
     private void loadDriverTrips() {
@@ -155,17 +118,13 @@ public class DriverActivity extends AppCompatActivity {
 
         currentRoutesList.setOnItemClickListener((parent, view, position, id) -> {
             Trip trip = driverTrips.get(position);
-            resumeTrip(trip);
+            Intent intent = new Intent(DriverActivity.this, MapViewActivity.class);
+            intent.putExtra("tripId", trip.getId());
+            intent.putExtra("isDriver", true);
+            intent.putExtra("numberPlate", trip.getNumberPlate());
+            intent.putExtra("route", trip.getRoute());
+            startActivity(intent);
         });
-    }
-
-    private void resumeTrip(Trip trip) {
-        currentTripId = trip.getId();
-        availableSeats = trip.getAvailableSeats();
-        showTripActive(trip.getNumberPlate(), trip.getRoute());
-        joinTripRoom();
-        loadTripRequests();
-        Toast.makeText(this, "Resumed trip: " + trip.getNumberPlate(), Toast.LENGTH_SHORT).show();
     }
 
     private void startTrip() {
@@ -186,7 +145,9 @@ public class DriverActivity extends AppCompatActivity {
             public void onResponse(Call<Trip> call, Response<Trip> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     currentTripId = response.body().getId();
-                    showTripActive(plate, route);
+                    currentPlate = plate;
+                    currentRoute = route;
+                    showTripActive();
                     joinTripRoom();
                     loadDriverTrips();
                     Toast.makeText(DriverActivity.this, "Trip started!", Toast.LENGTH_SHORT).show();
@@ -202,17 +163,15 @@ public class DriverActivity extends AppCompatActivity {
         });
     }
 
-    private void showTripActive(String plate, String route) {
+    private void showTripActive() {
         setupCard.setVisibility(View.GONE);
         tripCard.setVisibility(View.VISIBLE);
         requestsCard.setVisibility(View.VISIBLE);
-        mapCard.setVisibility(View.VISIBLE);
         txtTripId.setText("Trip ID: " + currentTripId);
-        txtPlateDisplay.setText("Plate: " + plate);
-        txtRouteDisplay.setText("Route: " + route);
+        txtPlateDisplay.setText("Plate: " + currentPlate);
+        txtRouteDisplay.setText("Route: " + currentRoute);
         updateSeatDisplay();
         loadTripRequests();
-        startLocationUpdates();
     }
 
     private void joinTripRoom() {
@@ -258,12 +217,10 @@ public class DriverActivity extends AppCompatActivity {
                 currentTripId = null;
                 tripCard.setVisibility(View.GONE);
                 requestsCard.setVisibility(View.GONE);
-                mapCard.setVisibility(View.GONE);
                 setupCard.setVisibility(View.VISIBLE);
                 editPlate.setText("");
                 editRoute.setText("");
                 loadDriverTrips();
-                stopLocationUpdates();
                 Toast.makeText(DriverActivity.this, "Trip ended", Toast.LENGTH_SHORT).show();
             }
 
@@ -282,11 +239,6 @@ public class DriverActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     pendingRequests = response.body();
                     updateRequestsList();
-                    for (TripRequest req : pendingRequests) {
-                        if (req.getPassengerLat() != 0 || req.getPassengerLng() != 0) {
-                            addPassengerMarker(req.getPassengerLat(), req.getPassengerLng(), req.getPickupPoint());
-                        }
-                    }
                 }
             }
 
@@ -320,13 +272,9 @@ public class DriverActivity extends AppCompatActivity {
                         JSONObject data = (JSONObject) args[0];
                         String tripId = data.optString("tripId");
                         if (tripId.equals(currentTripId)) {
-                            double pLat = data.optDouble("passengerLat", -1.286389);
-                            double pLng = data.optDouble("passengerLng", 36.817223);
-                            String pickup = data.optString("pickupPoint");
                             runOnUiThread(() -> {
                                 loadTripRequests();
-                                addPassengerMarker(pLat, pLng, pickup);
-                                Toast.makeText(this, "New request at " + pickup, Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, "New request at " + data.optString("pickupPoint"), Toast.LENGTH_LONG).show();
                             });
                         }
                     } catch (Exception e) { e.printStackTrace(); }
@@ -335,74 +283,9 @@ public class DriverActivity extends AppCompatActivity {
         }
     }
 
-    private void listenForVehicleLocation() {
-        if (SocketManager.getSocket() != null) {
-            SocketManager.getSocket().on("vehicle-location", args -> {
-                if (args.length > 0) {
-                    try {
-                        JSONObject data = (JSONObject) args[0];
-                        String tripId = data.optString("tripId");
-                        if (tripId.equals(currentTripId)) {
-                            double lat = data.getDouble("latitude");
-                            double lng = data.getDouble("longitude");
-                            runOnUiThread(() -> updateDriverMapLocation(lat, lng));
-                        }
-                    } catch (JSONException e) { e.printStackTrace(); }
-                }
-            });
-        }
-    }
-
-    private void updateDriverMapLocation(double lat, double lng) {
-        if (driverMap == null) return;
-        GeoPoint pos = new GeoPoint(lat, lng);
-        driverMap.getController().setCenter(pos);
-        driverMap.getOverlays().clear();
-        Marker marker = new Marker(driverMap);
-        marker.setPosition(pos);
-        marker.setTitle("My Location");
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        driverMap.getOverlays().add(marker);
-        driverMap.invalidate();
-    }
-
-    private void addPassengerMarker(double lat, double lng, String pickup) {
-        if (driverMap == null) return;
-        GeoPoint pos = new GeoPoint(lat, lng);
-        Marker marker = new Marker(driverMap);
-        marker.setPosition(pos);
-        marker.setTitle("Passenger at " + pickup);
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        marker.setIcon(getDrawable(android.R.drawable.ic_menu_mylocation));
-        driverMap.getOverlays().add(marker);
-        driverMap.invalidate();
-    }
-
-    private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, locationListener);
-        }
-    }
-
-    private void stopLocationUpdates() {
-        locationManager.removeUpdates(locationListener);
-    }
-
-    private void sendLocationUpdate(double lat, double lng) {
-        if (currentTripId == null || SocketManager.getSocket() == null) return;
-        try {
-            JSONObject payload = new JSONObject();
-            payload.put("tripId", currentTripId);
-            payload.put("latitude", lat);
-            payload.put("longitude", lng);
-            SocketManager.getSocket().emit("location-update", payload);
-        } catch (JSONException e) { e.printStackTrace(); }
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopLocationUpdates();
         SocketManager.releaseConnection();
     }
 }
