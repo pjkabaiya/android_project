@@ -74,25 +74,22 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/vehicles', require('./routes/vehicles'));
 app.use('/api/routes', require('./routes/routes'));
 app.use('/api/reservations', require('./routes/reservations'));
+app.use('/api/trips', require('./routes/trips'));
 
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
   socket.on('driver-join', (data) => {
-    // driver joins a room for their vehicle id
-    if (data && data.vehicleId) socket.join(`vehicle_${data.vehicleId}`);
+    if (data && data.tripId) socket.join(`trip_${data.tripId}`);
   });
 
   socket.on('location-update', (payload) => {
-    // payload: { vehicleId, latitude, longitude, timestamp }
-    if (payload && payload.vehicleId) {
-      io.to(`vehicle_${payload.vehicleId}`).emit('location-update', payload);
-      // also broadcast to passengers subscribed to the route
+    if (payload && payload.tripId) {
+      io.to(`trip_${payload.tripId}`).emit('location-update', payload);
       io.emit('vehicle-location', payload);
     }
   });
 
   socket.on('reservation-update', (payload) => {
-    // passenger/driver reservation events
     io.emit('reservation-update', payload);
   });
 });

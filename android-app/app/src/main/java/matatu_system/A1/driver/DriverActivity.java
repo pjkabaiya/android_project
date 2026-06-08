@@ -1,155 +1,191 @@
 package matatu_system.A1.driver;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.location.Location;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import matatu_system.A1.R;
+import matatu_system.A1.api.RetrofitClient;
+import matatu_system.A1.models.Trip;
 import matatu_system.A1.utils.SocketManager;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class DriverActivity extends AppCompatActivity {
 
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1000;
-    private FusedLocationProviderClient fusedLocationClient;
-    private LocationCallback locationCallback;
-    private boolean isTracking = false;
-    private Button startTripButton, plusSeatButton, minusSeatButton;
-    private TextView seatStatusText;
-    private int occupiedSeats = 0;
-    private final int MAX_SEATS = 14;
+    private EditText editPlate, editRoute, editSeats;
+    private Button btnStartTrip, btnEndTrip, btnPlus, btnMinus;
+    private View setupCard, tripCard, requestsCard;
+    private TextView txtTripId, txtPlateDisplay, txtRouteDisplay, txtSeatsDisplay, txtRequestInfo;
+
+    private String currentTripId;
+    private int availableSeats = 14;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver);
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        editPlate = findViewById(R.id.editPlateNumber);
+        editRoute = findViewById(R.id.editRoute);
+        editSeats = findViewById(R.id.editSeats);
+        btnStartTrip = findViewById(R.id.btnStartTrip);
+        btnEndTrip = findViewById(R.id.btnEndTrip);
+        btnPlus = findViewById(R.id.btnPlusSeat);
+        btnMinus = findViewById(R.id.btnMinusSeat);
+        setupCard = findViewById(R.id.setupCard);
+        tripCard = findViewById(R.id.tripCard);
+        requestsCard = findViewById(R.id.requestsCard);
+        txtTripId = findViewById(R.id.txtTripId);
+        txtPlateDisplay = findViewById(R.id.txtPlateDisplay);
+        txtRouteDisplay = findViewById(R.id.txtRouteDisplay);
+        txtSeatsDisplay = findViewById(R.id.txtSeatsDisplay);
+        txtRequestInfo = findViewById(R.id.txtRequestInfo);
 
-        startTripButton = findViewById(R.id.startTripButton);
-        plusSeatButton = findViewById(R.id.plusSeatButton);
-        minusSeatButton = findViewById(R.id.minusSeatButton);
-        seatStatusText = findViewById(R.id.seatStatusText);
+        btnStartTrip.setOnClickListener(v -> startTrip());
+        btnEndTrip.setOnClickListener(v -> endTrip());
+        btnPlus.setOnClickListener(v -> changeSeats(1));
+        btnMinus.setOnClickListener(v -> changeSeats(-1));
 
-        startTripButton.setOnClickListener(v -> {
-            if (isTracking) {
-                stopTracking();
-            } else {
-                startTracking();
-            }
-        });
-
-        plusSeatButton.setOnClickListener(v -> {
-            if (occupiedSeats < MAX_SEATS) {
-                occupiedSeats++;
-                updateSeatUI();
-                sendSeatUpdate();
-            }
-        });
-
-        minusSeatButton.setOnClickListener(v -> {
-            if (occupiedSeats > 0) {
-                occupiedSeats--;
-                updateSeatUI();
-                sendSeatUpdate();
-            }
-        });
-
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                for (Location location : locationResult.getLocations()) {
-                    updateLocationOnServer(location);
-                }
-            }
-        };
-
-        updateSeatUI();
+        SocketManager.establishConnection();
+        listenForRequests();
     }
 
-    private void updateSeatUI() {
-        seatStatusText.setText("Occupied Seats: " + occupiedSeats + " / " + MAX_SEATS);
-    }
+    private void startTrip() {
+        String plate = editPlate.getText().toString().trim();
+        String route = editRoute.getText().toString().trim();
+        String seatsStr = editSeats.getText().toString().trim();
 
-    private void sendSeatUpdate() {
-        // Updated to match backend "reservation-update" event
-        if (SocketManager.getSocket() != null && SocketManager.getSocket().connected()) {
-            try {
-                JSONObject data = new JSONObject();
-                data.put("occupiedSeats", occupiedSeats);
-                data.put("availableSeats", MAX_SEATS - occupiedSeats);
-                data.put("vehicleId", "test_vehicle_id");
-                data.put("type", "seat_update"); 
-                SocketManager.getSocket().emit("reservation-update", data);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void startTracking() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
+        if (plate.isEmpty() || route.isEmpty()) {
+            Toast.makeText(this, "Fill in plate and route", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000)
-                .setMinUpdateIntervalMillis(2000)
-                .build();
+        availableSeats = seatsStr.isEmpty() ? 14 : Integer.parseInt(seatsStr);
 
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
-        isTracking = true;
-        startTripButton.setText("End Trip");
-        SocketManager.establishConnection();
-        Toast.makeText(this, "Trip started. Tracking enabled.", Toast.LENGTH_SHORT).show();
+        Trip trip = new Trip(plate, route, availableSeats, "driver_001");
+        RetrofitClient.getApiService().createTrip(trip).enqueue(new Callback<Trip>() {
+            @Override
+            public void onResponse(Call<Trip> call, Response<Trip> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    currentTripId = response.body().getId();
+                    showTripActive(plate, route);
+                    joinTripRoom();
+                    Toast.makeText(DriverActivity.this, "Trip started!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(DriverActivity.this, "Failed to start trip", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Trip> call, Throwable t) {
+                Toast.makeText(DriverActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    private void stopTracking() {
-        fusedLocationClient.removeLocationUpdates(locationCallback);
-        isTracking = false;
-        startTripButton.setText("Start Trip");
-        SocketManager.closeConnection();
-        Toast.makeText(this, "Trip ended.", Toast.LENGTH_SHORT).show();
+    private void showTripActive(String plate, String route) {
+        setupCard.setVisibility(View.GONE);
+        tripCard.setVisibility(View.VISIBLE);
+        requestsCard.setVisibility(View.VISIBLE);
+        txtTripId.setText("Trip ID: " + currentTripId);
+        txtPlateDisplay.setText("Plate: " + plate);
+        txtRouteDisplay.setText("Route: " + route);
+        updateSeatDisplay();
     }
 
-    private void updateLocationOnServer(Location location) {
-        // Updated to match backend "location-update" event
-        if (SocketManager.getSocket() != null && SocketManager.getSocket().connected()) {
+    private void joinTripRoom() {
+        if (SocketManager.getSocket() != null) {
             try {
                 JSONObject data = new JSONObject();
-                data.put("latitude", location.getLatitude());
-                data.put("longitude", location.getLongitude());
-                data.put("vehicleId", "test_vehicle_id");
-                data.put("timestamp", System.currentTimeMillis());
-                SocketManager.getSocket().emit("location-update", data);
-            } catch (JSONException e) {
-                e.printStackTrace();
+                data.put("tripId", currentTripId);
+                SocketManager.getSocket().emit("driver-join", data);
+            } catch (JSONException e) { e.printStackTrace(); }
+        }
+    }
+
+    private void changeSeats(int delta) {
+        availableSeats = Math.max(0, Math.min(60, availableSeats + delta));
+        updateSeatDisplay();
+        updateSeatsOnBackend();
+    }
+
+    private void updateSeatDisplay() {
+        txtSeatsDisplay.setText("Available Seats: " + availableSeats);
+    }
+
+    private void updateSeatsOnBackend() {
+        if (currentTripId == null) return;
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("availableSeats", availableSeats);
+        RetrofitClient.getApiService().updateTrip(currentTripId, updates).enqueue(new Callback<Trip>() {
+            @Override
+            public void onResponse(Call<Trip> call, Response<Trip> response) {}
+            @Override
+            public void onFailure(Call<Trip> call, Throwable t) {}
+        });
+    }
+
+    private void endTrip() {
+        if (currentTripId == null) return;
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "COMPLETED");
+        updates.put("availableSeats", availableSeats);
+        RetrofitClient.getApiService().updateTrip(currentTripId, updates).enqueue(new Callback<Trip>() {
+            @Override
+            public void onResponse(Call<Trip> call, Response<Trip> response) {
+                currentTripId = null;
+                tripCard.setVisibility(View.GONE);
+                requestsCard.setVisibility(View.GONE);
+                setupCard.setVisibility(View.VISIBLE);
+                editPlate.setText("");
+                editRoute.setText("");
+                Toast.makeText(DriverActivity.this, "Trip ended", Toast.LENGTH_SHORT).show();
             }
+
+            @Override
+            public void onFailure(Call<Trip> call, Throwable t) {
+                Toast.makeText(DriverActivity.this, "Error ending trip", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void listenForRequests() {
+        if (SocketManager.getSocket() != null) {
+            SocketManager.getSocket().on("reservation-update", args -> {
+                if (args.length > 0) {
+                    try {
+                        JSONObject data = (JSONObject) args[0];
+                        String tripId = data.optString("tripId");
+                        if (tripId.equals(currentTripId)) {
+                            String pickup = data.optString("pickupPoint");
+                            runOnUiThread(() -> {
+                                txtRequestInfo.setText("Passenger waiting at: " + pickup);
+                                txtRequestInfo.setTextColor(getColor(android.R.color.holo_orange_dark));
+                                Toast.makeText(this, "New request at " + pickup, Toast.LENGTH_LONG).show();
+                            });
+                        }
+                    } catch (Exception e) { e.printStackTrace(); }
+                }
+            });
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startTracking();
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+        SocketManager.closeConnection();
     }
 }
