@@ -43,6 +43,9 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
+// expose io through app to avoid circular require issues
+app.set('io', io);
+
 // Basic routes
 app.get('/', (req, res) => res.json({ ok: true, name: 'Smart Matatu Backend' }));
 
