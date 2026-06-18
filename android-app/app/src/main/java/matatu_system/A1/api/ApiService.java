@@ -3,7 +3,6 @@ package matatu_system.A1.api;
 import java.util.List;
 import java.util.Map;
 
-import matatu_system.A1.models.Reservation;
 import matatu_system.A1.models.Trip;
 import matatu_system.A1.models.TripRequest;
 import matatu_system.A1.models.User;
@@ -21,12 +20,6 @@ public interface ApiService {
 
     @GET("users/{firebaseUid}")
     Call<User> getUserProfile(@Path("firebaseUid") String firebaseUid);
-
-    @POST("api/reservations")
-    Call<Reservation> requestReservation(@Body Reservation reservation);
-
-    @PATCH("api/reservations/{id}/status")
-    Call<Reservation> updateReservationStatus(@Path("id") String id, @Body String status);
 
     @POST("api/trips")
     Call<Trip> createTrip(@Body Trip trip);

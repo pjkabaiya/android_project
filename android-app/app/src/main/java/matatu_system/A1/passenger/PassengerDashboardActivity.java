@@ -17,9 +17,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,7 +134,11 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     activeTrips = response.body();
-                    showVehicleList();
+                    if (activeTrips.size() == 1) {
+                        goToMap(activeTrips.get(0));
+                    } else {
+                        showVehicleList();
+                    }
                 } else {
                     // If combined search fails, try searching just the "to" destination
                     searchByDestination(to);
@@ -157,7 +158,11 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     activeTrips = response.body();
-                    showVehicleList();
+                    if (activeTrips.size() == 1) {
+                        goToMap(activeTrips.get(0));
+                    } else {
+                        showVehicleList();
+                    }
                 } else {
                     showNoResults();
                 }
@@ -167,6 +172,16 @@ public class PassengerDashboardActivity extends AppCompatActivity {
                 showNoResults();
             }
         });
+    }
+
+    private void goToMap(Trip trip) {
+        Intent intent = new Intent(PassengerDashboardActivity.this, MapViewActivity.class);
+        intent.putExtra("tripId", trip.getId());
+        intent.putExtra("isDriver", false);
+        intent.putExtra("numberPlate", trip.getNumberPlate());
+        intent.putExtra("route", trip.getRoute());
+        intent.putExtra("selectPickupDirect", true);
+        startActivity(intent);
     }
 
     private void showVehicleList() {

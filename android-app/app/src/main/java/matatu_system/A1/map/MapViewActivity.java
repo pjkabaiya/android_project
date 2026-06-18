@@ -118,12 +118,13 @@ public class MapViewActivity extends AppCompatActivity {
         txtInfo.setText((isDriver ? "Driver" : "Passenger") + " - " + (plate != null ? plate : ""));
         
         // Enforce View vs Edit mode
-        if (!isDriver) { 
-            passengerPanel.setVisibility(View.VISIBLE); 
-            driverPanel.setVisibility(View.GONE); 
+        if (!isDriver) {
+            passengerPanel.setVisibility(View.VISIBLE);
+            driverPanel.setVisibility(View.GONE);
             btnWaypoint.setVisibility(View.GONE);
             btnSimulate.setVisibility(View.GONE);
             btnClear.setVisibility(View.GONE);
+            if (btnUndo != null) btnUndo.setVisibility(View.GONE);
             btnSetPickup.setVisibility(View.VISIBLE);
             if (btnRequestRide != null) btnRequestRide.setVisibility(View.VISIBLE);
             txtStatus.setText("Tracking vehicle...");
@@ -337,11 +338,17 @@ public class MapViewActivity extends AppCompatActivity {
         ArrayList<GeoPoint> pts = (routePoints != null && !routePoints.isEmpty()) ? routePoints : waypoints;
         if (pts.size() < 2) return;
         
-        // If this client is a passenger, remove any waypoint markers so route appears read-only
+        // If this client is a passenger, remove any driver waypoint markers while preserving pickup markers.
         if (!isDriver) {
             List<Overlay> toRemove = new ArrayList<>();
             for (Overlay o : map.getOverlays()) {
-                if (o instanceof Marker && o != vehicleMarker) toRemove.add(o);
+                if (o instanceof Marker) {
+                    Marker marker = (Marker) o;
+                    String title = marker.getTitle();
+                    if (title != null && title.startsWith("WP")) {
+                        toRemove.add(o);
+                    }
+                }
             }
             map.getOverlays().removeAll(toRemove);
         }
@@ -726,100 +733,80 @@ public class MapViewActivity extends AppCompatActivity {
     }
 
     private void joinTripRoom() {
-        if (SocketManager.getSocket() != null) {
-            try {
-                JSONObject data = new JSONObject();
-                data.put("tripId", tripId);
-                SocketManager.getSocket().emit("driver-join", data);
-            } catch (JSONException e) { e.printStackTrace(); }
-        }
+        if (!isDriver || SocketManager.getSocket() == null) return;
+        try {
+            JSONObject data = new JSONObject();
+            data.put("tripId", tripId);
+            SocketManager.getSocket().emit("driver-join", data);
+        } catch (JSONException e) { e.printStackTrace(); }
     }
 
     private void listenForUpdates() {
         if (SocketManager.getSocket() == null) return;
+        // Unified handler for incoming socket messages related to this trip
+        io.socket.client.Socket socket = SocketManager.getSocket();
+        io.socket.emitter.Emitter.Listener unified = args -> {
+            if (args.length == 0) return;
+            try {
+                JSONObject data = (JSONObject) args[0];
+                if (!tripId.equals(data.optString("tripId"))) return;
+                handleIncomingSocketData(data);
+            } catch (Exception e) { e.printStackTrace(); }
+        };
 
-        SocketManager.getSocket().on("vehicle-location", args -> {
-            if (args.length > 0) {
-                try {
-                    JSONObject data = (JSONObject) args[0];
-                    if (data.optString("tripId").equals(tripId)) {
-                        if ("route_broadcast".equals(data.optString("type")) && !isDriver) {
-                            JSONArray pathArray = data.optJSONArray("routePath");
-                            if (pathArray != null) {
-                                runOnUiThread(() -> {
-                                    routePoints.clear();
-                                    for (int i = 0; i < pathArray.length(); i++) {
-                                        JSONArray coord = pathArray.optJSONArray(i);
-                                        if (coord != null) {
-                                            routePoints.add(new GeoPoint(coord.optDouble(0), coord.optDouble(1)));
-                                        }
-                                    }
-                                    drawRoute();
-                                });
+        socket.on("vehicle-location", unified);
+        socket.on("location-update", unified);
+
+        // reservation updates are also relevant but processed slightly differently
+        socket.on("reservation-update", args -> {
+            if (args.length == 0) return;
+            try {
+                JSONObject data = (JSONObject) args[0];
+                if (!tripId.equals(data.optString("tripId"))) return;
+                String type = data.optString("type");
+                if ("request_accepted".equals(type) && !isDriver) {
+                    runOnUiThread(() -> {
+                        txtPassengerStatus.setText("Driver accepted! Matatu is coming");
+                        loadRequests();
+                    });
+                } else if (isDriver) {
+                    runOnUiThread(() -> {
+                        loadRequests();
+                        Toast.makeText(this, "New request from " + data.optString("pickupPoint"), Toast.LENGTH_LONG).show();
+                    });
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        });
+    }
+
+    private void handleIncomingSocketData(JSONObject data) {
+        try {
+            String type = data.optString("type");
+            if ("route_broadcast".equals(type) && !isDriver) {
+                JSONArray pathArray = data.optJSONArray("routePath");
+                if (pathArray != null) {
+                    runOnUiThread(() -> {
+                        routePoints.clear();
+                        for (int i = 0; i < pathArray.length(); i++) {
+                            JSONArray coord = pathArray.optJSONArray(i);
+                            if (coord != null) {
+                                routePoints.add(new GeoPoint(coord.optDouble(0), coord.optDouble(1)));
                             }
-                        } else if (!isDriver) {
-                            double lat = data.getDouble("latitude");
-                            double lng = data.getDouble("longitude");
-                            currentLat = lat; currentLng = lng;
-                            runOnUiThread(() -> updateVehicleMarker(lat, lng));
                         }
-                    }
-                } catch (JSONException e) { e.printStackTrace(); }
+                        drawRoute();
+                    });
+                }
+                return;
             }
-        });
 
-        // Also listen for raw 'location-update' events (some relays use this name)
-        SocketManager.getSocket().on("location-update", args -> {
-            if (args.length > 0) {
-                try {
-                    JSONObject data = (JSONObject) args[0];
-                    if (data.optString("tripId").equals(tripId)) {
-                        if ("route_broadcast".equals(data.optString("type")) && !isDriver) {
-                            JSONArray pathArray = data.optJSONArray("routePath");
-                            if (pathArray != null) {
-                                runOnUiThread(() -> {
-                                    routePoints.clear();
-                                    for (int i = 0; i < pathArray.length(); i++) {
-                                        JSONArray coord = pathArray.optJSONArray(i);
-                                        if (coord != null) {
-                                            routePoints.add(new GeoPoint(coord.optDouble(0), coord.optDouble(1)));
-                                        }
-                                    }
-                                    drawRoute();
-                                });
-                            }
-                        } else if (!isDriver && data.has("latitude") && data.has("longitude")) {
-                            double lat = data.getDouble("latitude");
-                            double lng = data.getDouble("longitude");
-                            currentLat = lat; currentLng = lng;
-                            runOnUiThread(() -> updateVehicleMarker(lat, lng));
-                        }
-                    }
-                } catch (JSONException e) { e.printStackTrace(); }
+            // Regular location update
+            if (!isDriver && data.has("latitude") && data.has("longitude")) {
+                double lat = data.getDouble("latitude");
+                double lng = data.getDouble("longitude");
+                currentLat = lat; currentLng = lng;
+                runOnUiThread(() -> updateVehicleMarker(lat, lng));
             }
-        });
-
-        SocketManager.getSocket().on("reservation-update", args -> {
-            if (args.length > 0) {
-                try {
-                    JSONObject data = (JSONObject) args[0];
-                    if (data.optString("tripId").equals(tripId)) {
-                        String type = data.optString("type");
-                        if ("request_accepted".equals(type) && !isDriver) {
-                            runOnUiThread(() -> {
-                                txtPassengerStatus.setText("Driver accepted! Matatu is coming");
-                                loadRequests();
-                            });
-                        } else if (isDriver) {
-                            runOnUiThread(() -> {
-                                loadRequests();
-                                Toast.makeText(this, "New request from " + data.optString("pickupPoint"), Toast.LENGTH_LONG).show();
-                            });
-                        }
-                    }
-                } catch (Exception e) { e.printStackTrace(); }
-            }
-        });
+        } catch (JSONException e) { e.printStackTrace(); }
     }
 
     private void startGps() {

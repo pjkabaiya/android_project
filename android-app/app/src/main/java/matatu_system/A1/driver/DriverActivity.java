@@ -44,7 +44,6 @@ public class DriverActivity extends AppCompatActivity {
     private int availableSeats = 14;
     private List<Trip> driverTrips;
     private List<TripRequest> pendingRequests = new ArrayList<>();
-    private Map<String, String> tripIdToPlate = new HashMap<>();
     private ArrayAdapter<String> routesAdapter, requestsAdapter;
 
     private static final String DRIVER_ID = "driver_001";
@@ -123,12 +122,25 @@ public class DriverActivity extends AppCompatActivity {
 
         currentRoutesList.setOnItemClickListener((parent, view, position, id) -> {
             Trip trip = driverTrips.get(position);
-            Intent intent = new Intent(DriverActivity.this, MapViewActivity.class);
-            intent.putExtra("tripId", trip.getId());
-            intent.putExtra("isDriver", true);
-            intent.putExtra("numberPlate", trip.getNumberPlate());
-            intent.putExtra("route", trip.getRoute());
-            startActivity(intent);
+            
+            String[] options = {"Open Map (View Route)", "Trip Details (Passengers)"};
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Select Option")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        // Open Map
+                        Intent intent = new Intent(DriverActivity.this, MapViewActivity.class);
+                        intent.putExtra("tripId", trip.getId());
+                        intent.putExtra("isDriver", true);
+                        intent.putExtra("numberPlate", trip.getNumberPlate());
+                        intent.putExtra("route", trip.getRoute());
+                        startActivity(intent);
+                    } else {
+                        // Trip Details
+                        showTripDetailsDialog(trip);
+                    }
+                })
+                .show();
         });
 
         currentRoutesList.setOnItemLongClickListener((parent, view, position, id) -> {
@@ -157,6 +169,51 @@ public class DriverActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<Trip> call, Throwable t) {
                 Toast.makeText(DriverActivity.this, "Failed to delete", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showTripDetailsDialog(Trip trip) {
+        RetrofitClient.getApiService().getTripRequests(trip.getId()).enqueue(new Callback<List<TripRequest>>() {
+            @Override
+            public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<TripRequest> reqs = response.body();
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Status: ").append(trip.getStatus()).append("\n");
+                    sb.append("Route: ").append(trip.getRoute()).append("\n");
+                    sb.append("Plate: ").append(trip.getNumberPlate()).append("\n\n");
+                    sb.append("Passengers:\n");
+                    
+                    if (reqs.isEmpty()) {
+                        sb.append("- No passengers yet");
+                    } else {
+                        for (TripRequest req : reqs) {
+                            sb.append("- ").append(req.getPickupPoint())
+                              .append(" (").append(req.getStatus()).append(")\n");
+                        }
+                    }
+
+                    new androidx.appcompat.app.AlertDialog.Builder(DriverActivity.this)
+                        .setTitle("Trip Details")
+                        .setMessage(sb.toString())
+                        .setPositiveButton("Close", null)
+                        .setNeutralButton("View on Map", (d, w) -> {
+                            Intent intent = new Intent(DriverActivity.this, MapViewActivity.class);
+                            intent.putExtra("tripId", trip.getId());
+                            intent.putExtra("isDriver", true);
+                            intent.putExtra("numberPlate", trip.getNumberPlate());
+                            intent.putExtra("route", trip.getRoute());
+                            startActivity(intent);
+                        })
+                        .show();
+                } else {
+                    Toast.makeText(DriverActivity.this, "Failed to load passenger details", Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<List<TripRequest>> call, Throwable t) {
+                Toast.makeText(DriverActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
