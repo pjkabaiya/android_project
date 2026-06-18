@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SmartMatatu" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/matatu_yellow</item>
+        <item name="colorOnPrimary">@color/matatu_black</item>
+        <item name="colorPrimaryContainer">#FFFFF176</item>
+        <item name="colorSecondary">@color/matatu_black</item>
+        <item name="colorOnSecondary">@color/matatu_white</item>
+        <item name="colorError">@color/matatu_red</item>
+        <item name="colorOnError">@color/matatu_white</item>
+        <item name="android:colorBackground">@color/bg_light</item>
+    </style>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Smart Matatu</string>
+    <string name="driver_dashboard">Driver Dashboard</string>
+    <string name="passenger_dashboard">Find Your Ride</string>
+    <string name="start_trip">Start Trip</string>
+    <string name="end_trip">End Trip</string>
+    <string name="search_vehicles">Search Available Vehicles</string>
+    <string name="request_ride">Request Ride</string>
+    <string name="set_wp">Set WP</string>
+    <string name="done_wp">Done WP</string>
+    <string name="simulate_start">Start</string>
+    <string name="simulate_stop">Stop</string>
+    <string name="clear_route">Clear</string>
+    <string name="live_tracking">Live Tracking</string>
+    <string name="number_plate_hint">Number Plate (e.g. KAA 001A)</string>
+    <string name="route_hint">Route (e.g. Nairobi → Nakuru)</string>
+    <string name="seats_hint">Available Seats</string>
+    <string name="from_hint">From (e.g. Nairobi)</string>
+    <string name="to_hint">To (e.g. Nakuru)</string>
+    <string name="pickup_hint">Enter your pickup location</string>
+    <string name="current_routes">Current Routes</string>
+    <string name="passenger_requests">Passenger Requests</string>
+    <string name="my_requests">My Active Requests</string>
+    <string name="active_vehicles">Active Vehicles</string>
+    <string name="no_vehicles">No vehicles found. Try a different route.</string>
+    <string name="waiting_driver">Request sent, waiting for driver...</string>
+    <string name="driver_accepted">Driver accepted! Matatu is coming</string>
+    <string name="passenger_accepted">Request accepted!</string>
+    <string name="request_failed">Request failed</string>
+</resources>

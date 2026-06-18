@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="matatu_yellow">#FFC107</color>
+    <color name="matatu_yellow_dark">#FFA000</color>
+    <color name="matatu_black">#212121</color>
+    <color name="matatu_green">#43A047</color>
+    <color name="matatu_red">#D32F2F</color>
+    <color name="matatu_orange">#FF9800</color>
+    <color name="matatu_blue">#1565C0</color>
+    <color name="matatu_white">#FFFFFF</color>
+    <color name="bg_light">#F5F5F5</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="divider">#E0E0E0</color>
+</resources>
