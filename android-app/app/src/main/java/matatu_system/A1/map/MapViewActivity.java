@@ -352,7 +352,7 @@ public class MapViewActivity extends AppCompatActivity {
         routePolyline.setColor(0xFF1565C0);
         routePolyline.setWidth(8f); // Slightly thicker for better visibility
         // Make route non-interactive for passengers
-        // routePolyline.setOnClickListener(null); // osmdroid doesn't have setClickable, default is non-clickable
+        routePolyline.setOnClickListener(null);
 
         // Add polyline below markers so vehicle/requests render above it
         map.getOverlays().add(0, routePolyline);
