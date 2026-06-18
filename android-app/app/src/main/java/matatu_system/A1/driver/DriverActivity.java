@@ -43,7 +43,7 @@ public class DriverActivity extends AppCompatActivity {
     private String currentRoute;
     private int availableSeats = 14;
     private List<Trip> driverTrips;
-    private List<TripRequest> allPendingRequests = new ArrayList<>();
+    private List<TripRequest> pendingRequests = new ArrayList<>();
     private Map<String, String> tripIdToPlate = new HashMap<>();
     private ArrayAdapter<String> routesAdapter, requestsAdapter;
 
