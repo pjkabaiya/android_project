@@ -178,6 +178,11 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     }
 
     private void showVehicleList() {
+        if (activeTrips == null || activeTrips.isEmpty()) {
+            showNoResults();
+            return;
+        }
+
         txtResultsHeader.setVisibility(View.VISIBLE);
         vehicleList.setVisibility(View.VISIBLE);
         txtNoResults.setVisibility(View.GONE);
@@ -185,8 +190,8 @@ public class PassengerDashboardActivity extends AppCompatActivity {
 
         String[] items = new String[activeTrips.size()];
         for (int i = 0; i < activeTrips.size(); i++) {
-            Trip t = activeTrips.get(i);
-            items[i] = t.getNumberPlate() + "  |  " + t.getRoute() + "  |  Seats: " + t.getAvailableSeats();
+            Trip trip = activeTrips.get(i);
+            items[i] = trip.getNumberPlate() + "  |  " + trip.getRoute() + "  |  Seats: " + trip.getAvailableSeats();
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);

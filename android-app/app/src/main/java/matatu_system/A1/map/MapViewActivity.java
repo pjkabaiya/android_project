@@ -347,11 +347,11 @@ public class MapViewActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    for (Trip t : response.body()) {
-                        if (tripId.equals(t.getId()) && t.getRoutePath() != null) {
+                    for (Trip trip : response.body()) {
+                        if (tripId.equals(trip.getId()) && trip.getRoutePath() != null) {
                             routePoints.clear();
-                            for (List<Double> pt : t.getRoutePath()) {
-                                routePoints.add(new GeoPoint(pt.get(0), pt.get(1)));
+                            for (Trip.RoutePoint point : trip.getRoutePath()) {
+                                routePoints.add(new GeoPoint(point.lat, point.lng));
                             }
                             drawRoute();
                             break;

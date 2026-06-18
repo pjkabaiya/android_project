@@ -3,7 +3,7 @@ package matatu_system.A1.models;
 import com.google.gson.annotations.SerializedName;
 
 public class Reservation {
-    @SerializedName("_id")
+    @SerializedName(value = "id", alternate = {"_id"})
     private String id;
     private String passengerId;
     private String vehicleId;

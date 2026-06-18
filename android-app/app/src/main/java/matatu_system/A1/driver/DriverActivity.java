@@ -114,8 +114,8 @@ public class DriverActivity extends AppCompatActivity {
         currentRoutesCard.setVisibility(View.VISIBLE);
 
         List<String> items = new ArrayList<>();
-        for (Trip t : driverTrips) {
-            items.add(t.getNumberPlate() + " - " + t.getRoute() + " (" + t.getAvailableSeats() + " seats)");
+        for (Trip trip : driverTrips) {
+            items.add(trip.getNumberPlate() + " - " + trip.getRoute() + " (" + trip.getAvailableSeats() + " seats)");
         }
 
         routesAdapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);
