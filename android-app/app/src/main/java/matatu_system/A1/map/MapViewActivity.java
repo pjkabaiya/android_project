@@ -94,6 +94,8 @@ public class MapViewActivity extends AppCompatActivity {
         isDriver = getIntent().getBooleanExtra("isDriver", false);
         String plate = getIntent().getStringExtra("numberPlate");
         String route = getIntent().getStringExtra("route");
+        boolean selectPickupDirect = getIntent().getBooleanExtra("selectPickupDirect", false);
+        boolean createRouteDirect = getIntent().getBooleanExtra("createRouteDirect", false);
 
         map = findViewById(R.id.mapView);
         txtInfo = findViewById(R.id.txtMapInfo);
@@ -174,6 +176,25 @@ public class MapViewActivity extends AppCompatActivity {
         });
 
         if (isDriver) startGps();
+
+        // Enable direct pickup selection for passengers
+        if (selectPickupDirect && !isDriver) {
+            selectingPickup = true;
+            btnSetPickup.setText("Tap Map");
+            txtStatus.setText("Tap map to set your pickup point");
+        }
+
+        // Enable direct route creation for drivers
+        if (createRouteDirect && isDriver) {
+            waypointMode = true;
+            btnWaypoint.setText("Done WP");
+            if (btnUndo != null) btnUndo.setVisibility(View.VISIBLE);
+            if (btnSimulate != null) {
+                btnSimulate.setText("Start Journey");
+                btnSimulate.setVisibility(View.VISIBLE);
+            }
+            txtStatus.setText("Tap map to add route points");
+        }
     }
 
     private void togglePickupSelection() {
@@ -189,11 +210,73 @@ public class MapViewActivity extends AppCompatActivity {
         btnSetPickup.setText("Pickup Set");
         txtStatus.setText("Pickup point updated!");
         
-        TripRequest dummy = new TripRequest(tripId, "PASSENGER", "My Selection");
-        dummy.setPassengerLat(currentLat);
-        dummy.setPassengerLng(currentLng);
-        dummy.setStatus("WAITING");
-        addPassengerMarker(dummy);
+        // Show name input dialog
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        builder.setTitle("Enter Your Name");
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        input.setHint("Your name");
+        builder.setView(input);
+        
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String passengerName = input.getText().toString().trim();
+            if (passengerName.isEmpty()) {
+                passengerName = "Passenger";
+            }
+            
+            // Add marker on map
+            TripRequest dummy = new TripRequest(tripId, "PASSENGER", passengerName);
+            dummy.setPassengerLat(currentLat);
+            dummy.setPassengerLng(currentLng);
+            dummy.setStatus("WAITING");
+            addPassengerMarker(dummy);
+            
+            // Create the trip request
+            createTripRequestWithName(passengerName);
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            selectingPickup = true;
+            btnSetPickup.setText("Tap Map");
+            txtStatus.setText("Tap map to set your pickup point");
+            dialog.cancel();
+        });
+        
+        builder.show();
+    }
+
+    private void createTripRequestWithName(String passengerName) {
+        String passengerId = "passenger_" + System.currentTimeMillis();
+        TripRequest req = new TripRequest(tripId, passengerId, passengerName);
+        req.setPassengerLat(currentLat);
+        req.setPassengerLng(currentLng);
+        
+        RetrofitClient.getApiService().createTripRequest(tripId, req).enqueue(new Callback<TripRequest>() {
+            @Override
+            public void onResponse(Call<TripRequest> call, Response<TripRequest> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(MapViewActivity.this, "Ride requested with location!", Toast.LENGTH_LONG).show();
+                    loadRequests();
+                    
+                    if (SocketManager.getSocket() != null) {
+                        try {
+                            JSONObject data = new JSONObject();
+                            data.put("tripId", tripId);
+                            data.put("pickupPoint", passengerName);
+                            data.put("type", "passenger_request");
+                            data.put("passengerLat", currentLat);
+                            data.put("passengerLng", currentLng);
+                            SocketManager.getSocket().emit("reservation-update", data);
+                        } catch (JSONException e) { e.printStackTrace(); }
+                    }
+                } else {
+                    Toast.makeText(MapViewActivity.this, "Request failed: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override public void onFailure(Call<TripRequest> call, Throwable t) {
+                Toast.makeText(MapViewActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void toggleWaypointMode() {
@@ -254,11 +337,25 @@ public class MapViewActivity extends AppCompatActivity {
         ArrayList<GeoPoint> pts = (routePoints != null && !routePoints.isEmpty()) ? routePoints : waypoints;
         if (pts.size() < 2) return;
         
+        // If this client is a passenger, remove any waypoint markers so route appears read-only
+        if (!isDriver) {
+            List<Overlay> toRemove = new ArrayList<>();
+            for (Overlay o : map.getOverlays()) {
+                if (o instanceof Marker && o != vehicleMarker) toRemove.add(o);
+            }
+            map.getOverlays().removeAll(toRemove);
+        }
+
         routePolyline = new Polyline();
         routePolyline.setPoints(new ArrayList<>(pts));
+        // Enforce blue color for shared route
         routePolyline.setColor(0xFF1565C0);
         routePolyline.setWidth(8f); // Slightly thicker for better visibility
-        map.getOverlays().add(0, routePolyline); // Add at index 0 to stay below markers
+        // Make route non-interactive for passengers
+        routePolyline.setClickable(false);
+
+        // Add polyline below markers so vehicle/requests render above it
+        map.getOverlays().add(0, routePolyline);
         map.invalidate();
     }
 
@@ -661,6 +758,37 @@ public class MapViewActivity extends AppCompatActivity {
                                 });
                             }
                         } else if (!isDriver) {
+                            double lat = data.getDouble("latitude");
+                            double lng = data.getDouble("longitude");
+                            currentLat = lat; currentLng = lng;
+                            runOnUiThread(() -> updateVehicleMarker(lat, lng));
+                        }
+                    }
+                } catch (JSONException e) { e.printStackTrace(); }
+            }
+        });
+
+        // Also listen for raw 'location-update' events (some relays use this name)
+        SocketManager.getSocket().on("location-update", args -> {
+            if (args.length > 0) {
+                try {
+                    JSONObject data = (JSONObject) args[0];
+                    if (data.optString("tripId").equals(tripId)) {
+                        if ("route_broadcast".equals(data.optString("type")) && !isDriver) {
+                            JSONArray pathArray = data.optJSONArray("routePath");
+                            if (pathArray != null) {
+                                runOnUiThread(() -> {
+                                    routePoints.clear();
+                                    for (int i = 0; i < pathArray.length(); i++) {
+                                        JSONArray coord = pathArray.optJSONArray(i);
+                                        if (coord != null) {
+                                            routePoints.add(new GeoPoint(coord.optDouble(0), coord.optDouble(1)));
+                                        }
+                                    }
+                                    drawRoute();
+                                });
+                            }
+                        } else if (!isDriver && data.has("latitude") && data.has("longitude")) {
                             double lat = data.getDouble("latitude");
                             double lng = data.getDouble("longitude");
                             currentLat = lat; currentLng = lng;

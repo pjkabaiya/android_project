@@ -178,13 +178,20 @@ public class DriverActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<Trip> call, Response<Trip> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    currentTripId = response.body().getId();
-                    currentPlate = plate;
-                    currentRoute = route;
-                    showTripActive();
-                    joinTripRoom();
+                    String tripId = response.body().getId();
+
+                    // Launch map to create the route visually
+                    Intent intent = new Intent(DriverActivity.this, MapViewActivity.class);
+                    intent.putExtra("tripId", tripId);
+                    intent.putExtra("isDriver", true);
+                    intent.putExtra("numberPlate", plate);
+                    intent.putExtra("route", route);
+                    intent.putExtra("availableSeats", availableSeats);
+                    intent.putExtra("createRouteDirect", true);
+                    startActivity(intent);
+
+                    // Refresh trips list
                     loadDriverTrips();
-                    Toast.makeText(DriverActivity.this, "Trip started!", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(DriverActivity.this, "Failed to start trip", Toast.LENGTH_SHORT).show();
                 }

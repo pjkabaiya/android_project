@@ -35,16 +35,13 @@ import retrofit2.Response;
 
 public class PassengerDashboardActivity extends AppCompatActivity {
 
-    private EditText editFrom, editTo, editPickupPoint;
-    private Button btnSearch, btnRequest;
+    private EditText editFrom, editTo;
+    private Button btnSearch;
     private ListView vehicleList, activeRequestsList;
-    private TextView txtResultsHeader, txtNoResults, txtSelectedVehicle;
-    private View requestCard, activeRequestsCard;
+    private TextView txtResultsHeader, txtNoResults;
+    private View activeRequestsCard;
 
     private List<Trip> activeTrips;
-    private String selectedTripId;
-    private String currentPlate;
-    private String currentRoute;
 
     private static final String PASSENGER_ID = "passenger_" + System.currentTimeMillis();
     private LocationManager passengerLocationManager;
@@ -58,19 +55,14 @@ public class PassengerDashboardActivity extends AppCompatActivity {
 
         editFrom = findViewById(R.id.editFrom);
         editTo = findViewById(R.id.editTo);
-        editPickupPoint = findViewById(R.id.editPickupPoint);
         btnSearch = findViewById(R.id.btnSearch);
-        btnRequest = findViewById(R.id.btnRequestRide);
         vehicleList = findViewById(R.id.vehicleList);
         txtResultsHeader = findViewById(R.id.txtResultsHeader);
         txtNoResults = findViewById(R.id.txtNoResults);
-        txtSelectedVehicle = findViewById(R.id.txtSelectedVehicle);
-        requestCard = findViewById(R.id.requestCard);
         activeRequestsCard = findViewById(R.id.activeRequestsCard);
         activeRequestsList = findViewById(R.id.activeRequestsList);
 
         btnSearch.setOnClickListener(v -> searchTrips());
-        btnRequest.setOnClickListener(v -> requestRide());
 
         SocketManager.establishConnection();
 
@@ -186,7 +178,6 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         txtResultsHeader.setVisibility(View.VISIBLE);
         vehicleList.setVisibility(View.VISIBLE);
         txtNoResults.setVisibility(View.GONE);
-        requestCard.setVisibility(View.GONE);
 
         String[] items = new String[activeTrips.size()];
         for (int i = 0; i < activeTrips.size(); i++) {
@@ -199,11 +190,13 @@ public class PassengerDashboardActivity extends AppCompatActivity {
 
         vehicleList.setOnItemClickListener((parent, view, position, id) -> {
             Trip trip = activeTrips.get(position);
-            selectedTripId = trip.getId();
-            currentPlate = trip.getNumberPlate();
-            currentRoute = trip.getRoute();
-            txtSelectedVehicle.setText("Vehicle: " + trip.getNumberPlate() + " (" + trip.getRoute() + ")");
-            requestCard.setVisibility(View.VISIBLE);
+            Intent intent = new Intent(PassengerDashboardActivity.this, MapViewActivity.class);
+            intent.putExtra("tripId", trip.getId());
+            intent.putExtra("isDriver", false);
+            intent.putExtra("numberPlate", trip.getNumberPlate());
+            intent.putExtra("route", trip.getRoute());
+            intent.putExtra("selectPickupDirect", true);
+            startActivity(intent);
         });
     }
 
@@ -211,56 +204,6 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         txtResultsHeader.setVisibility(View.GONE);
         vehicleList.setVisibility(View.GONE);
         txtNoResults.setVisibility(View.VISIBLE);
-        requestCard.setVisibility(View.GONE);
-        selectedTripId = null;
-    }
-
-    private void requestRide() {
-        if (selectedTripId == null) {
-            Toast.makeText(this, "Please select a vehicle first", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String pickup = editPickupPoint.getText().toString().trim();
-        if (pickup.isEmpty()) {
-            Toast.makeText(this, "Enter your pickup location", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        TripRequest req = new TripRequest(selectedTripId, PASSENGER_ID, pickup);
-        req.setPassengerLat(currentLat);
-        req.setPassengerLng(currentLng);
-        RetrofitClient.getApiService().createTripRequest(selectedTripId, req).enqueue(new Callback<TripRequest>() {
-            @Override
-            public void onResponse(Call<TripRequest> call, Response<TripRequest> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(PassengerDashboardActivity.this, "Ride requested!", Toast.LENGTH_LONG).show();
-                    requestCard.setVisibility(View.GONE);
-                    loadActiveRequests();
-                    sendSocketRequest(pickup);
-                } else {
-                    Toast.makeText(PassengerDashboardActivity.this, "Request failed: " + response.code(), Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<TripRequest> call, Throwable t) {
-                Toast.makeText(PassengerDashboardActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void sendSocketRequest(String pickup) {
-        if (SocketManager.getSocket() != null && SocketManager.getSocket().connected()) {
-            try {
-                JSONObject data = new JSONObject();
-                data.put("tripId", selectedTripId);
-                data.put("pickupPoint", pickup);
-                data.put("type", "passenger_request");
-                data.put("passengerLat", currentLat);
-                data.put("passengerLng", currentLng);
-                SocketManager.getSocket().emit("reservation-update", data);
-            } catch (JSONException e) { e.printStackTrace(); }
-        }
     }
 
     @Override
