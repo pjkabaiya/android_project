@@ -1,40 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="32dp"
-    android:background="#FFFFFF">
+    android:background="@color/bg_light">
+
+    <ImageView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:src="@drawable/ic_matatu"
+        android:contentDescription="Smart Matatu"
+        android:layout_marginBottom="16dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Smart Matatu Debug"
-        android:textSize="24sp"
+        android:text="@string/app_name"
+        android:textSize="28sp"
         android:textStyle="bold"
+        android:textColor="@color/matatu_black"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Debug Mode"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
         android:layout_marginBottom="48dp"/>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnTestPassenger"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:text="Open Passenger App"
+        android:layout_height="72dp"
+        android:text="@string/passenger_dashboard"
         android:textSize="18sp"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="@color/matatu_yellow"
+        android:textColor="@color/matatu_black"
+        app:icon="@drawable/ic_passenger_pin"
+        app:iconGravity="textStart"
+        app:cornerRadius="16dp" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnTestDriver"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:text="Open Driver App"
-        android:textSize="18sp"/>
+        android:layout_height="72dp"
+        android:text="@string/driver_dashboard"
+        android:textSize="18sp"
+        android:backgroundTint="@color/matatu_black"
+        android:textColor="@color/matatu_white"
+        app:icon="@drawable/ic_matatu"
+        app:iconGravity="textStart"
+        app:cornerRadius="16dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="(Authentication Bypassed)"
         android:layout_marginTop="32dp"
-        android:textColor="#999999"/>
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"/>
 
 </LinearLayout>

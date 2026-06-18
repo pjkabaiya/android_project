@@ -5,17 +5,32 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="20dp"
-    android:background="#F5F5F5">
+    android:background="@color/bg_light">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Find Your Ride"
-        android:textSize="28sp"
-        android:textStyle="bold"
+        android:orientation="horizontal"
         android:gravity="center"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="24dp">
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_matatu"
+            android:contentDescription="Matatu"
+            android:layout_marginEnd="10dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/passenger_dashboard"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@color/matatu_black" />
+
+    </LinearLayout>
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
@@ -34,10 +49,11 @@
                 android:id="@+id/editFrom"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="From (e.g. Nairobi)"
+                android:hint="@string/from_hint"
                 android:drawableStart="@android:drawable/ic_menu_myplaces"
                 android:drawablePadding="12dp"
                 android:padding="12dp"
+                android:textColorHint="@color/text_secondary"
                 android:background="@android:color/transparent" />
 
             <View
@@ -50,21 +66,24 @@
                 android:id="@+id/editTo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="To (e.g. Nakuru)"
+                android:hint="@string/to_hint"
                 android:drawableStart="@android:drawable/ic_menu_send"
                 android:drawablePadding="12dp"
                 android:padding="12dp"
+                android:textColorHint="@color/text_secondary"
                 android:background="@android:color/transparent" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSearch"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="16dp"
-                android:text="Search Available Vehicles"
+                android:text="@string/search_vehicles"
                 android:textAllCaps="false"
                 android:textSize="16sp"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="12dp"
+                android:backgroundTint="@color/matatu_yellow"
+                android:textColor="@color/matatu_black" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -86,9 +105,10 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="My Active Requests"
+                android:text="@string/my_requests"
                 android:textSize="16sp"
                 android:textStyle="bold"
+                android:textColor="@color/matatu_black"
                 android:layout_marginBottom="8dp" />
 
             <ListView
@@ -103,9 +123,10 @@
         android:id="@+id/txtResultsHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Active Vehicles"
+        android:text="@string/active_vehicles"
         android:textSize="18sp"
         android:textStyle="bold"
+        android:textColor="@color/matatu_black"
         android:visibility="gone"
         android:layout_marginBottom="8dp" />
 
@@ -121,8 +142,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="No vehicles found. Try a different route."
-        android:textColor="@android:color/darker_gray"
+        android:text="@string/no_vehicles"
+        android:textColor="@color/text_secondary"
         android:visibility="gone"
         android:layout_marginTop="32dp" />
 
@@ -152,19 +173,22 @@
                 android:id="@+id/editPickupPoint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Enter your pickup location"
+                android:hint="@string/pickup_hint"
                 android:layout_marginTop="12dp"
                 android:padding="12dp"
+                android:textColorHint="@color/text_secondary"
                 android:background="@android:color/transparent" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRequestRide"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginTop="12dp"
-                android:text="Request Ride"
+                android:text="@string/request_ride"
                 android:textAllCaps="false"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="12dp"
+                android:backgroundTint="@color/matatu_yellow"
+                android:textColor="@color/matatu_black" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 

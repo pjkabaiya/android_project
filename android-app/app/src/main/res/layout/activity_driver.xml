@@ -4,21 +4,36 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="#F5F5F5">
+    android:background="@color/bg_light">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Driver Dashboard"
-            android:textSize="28sp"
-            android:textStyle="bold"
+            android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_matatu"
+                android:contentDescription="Matatu"
+                android:layout_marginEnd="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/driver_dashboard"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="@color/matatu_black" />
+
+        </LinearLayout>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/currentRoutesCard"
@@ -38,9 +53,10 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Current Routes"
+                    android:text="@string/current_routes"
                     android:textSize="18sp"
                     android:textStyle="bold"
+                    android:textColor="@color/matatu_black"
                     android:layout_marginBottom="8dp" />
 
                 <ListView
@@ -68,34 +84,39 @@
                     android:id="@+id/editPlateNumber"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Number Plate (e.g. KAA 001A)"
+                    android:hint="@string/number_plate_hint"
                     android:inputType="textCapCharacters"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="12dp"
+                    android:textColorHint="@color/text_secondary" />
 
                 <EditText
                     android:id="@+id/editRoute"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Route (e.g. Nairobi → Nakuru)"
-                    android:layout_marginBottom="12dp" />
+                    android:hint="@string/route_hint"
+                    android:layout_marginBottom="12dp"
+                    android:textColorHint="@color/text_secondary" />
 
                 <EditText
                     android:id="@+id/editSeats"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Available Seats"
+                    android:hint="@string/seats_hint"
                     android:inputType="number"
                     android:text="14"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_marginBottom="16dp"
+                    android:textColorHint="@color/text_secondary" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnStartTrip"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:text="Start Trip"
+                    android:text="@string/start_trip"
                     android:textAllCaps="false"
                     android:textSize="18sp"
-                    app:cornerRadius="12dp" />
+                    app:cornerRadius="12dp"
+                    android:backgroundTint="@color/matatu_yellow"
+                    android:textColor="@color/matatu_black" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -121,20 +142,23 @@
                     android:layout_height="wrap_content"
                     android:text="Trip ID: ..."
                     android:textStyle="bold"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:textColor="@color/text_primary" />
 
                 <TextView
                     android:id="@+id/txtPlateDisplay"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/txtRouteDisplay"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary" />
 
                 <TextView
                     android:id="@+id/txtSeatsDisplay"
@@ -143,7 +167,7 @@
                     android:layout_marginTop="8dp"
                     android:textStyle="bold"
                     android:textSize="18sp"
-                    android:textColor="@color/design_default_color_primary" />
+                    android:textColor="@color/matatu_green" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -151,15 +175,17 @@
                     android:layout_marginTop="12dp"
                     android:gravity="center">
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMinusSeat"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:text="-"
                         android:textSize="24sp" />
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPlusSeat"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:text="+"
@@ -168,14 +194,14 @@
 
                 </LinearLayout>
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEndTrip"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="16dp"
-                    android:text="End Trip"
+                    android:text="@string/end_trip"
                     android:textAllCaps="false"
-                    android:backgroundTint="#D32F2F" />
+                    android:backgroundTint="@color/matatu_red" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -198,9 +224,10 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Passenger Requests"
+                    android:text="@string/passenger_requests"
                     android:textStyle="bold"
                     android:textSize="16sp"
+                    android:textColor="@color/matatu_black"
                     android:layout_marginBottom="8dp" />
 
                 <ListView

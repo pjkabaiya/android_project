@@ -68,7 +68,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Seats Available: 5"
-                android:textColor="@color/design_default_color_primary"
+                android:textColor="@color/matatu_green"
                 android:textStyle="bold" />
 
             <Button

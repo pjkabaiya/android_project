@@ -43,7 +43,8 @@ public class DriverActivity extends AppCompatActivity {
     private String currentRoute;
     private int availableSeats = 14;
     private List<Trip> driverTrips;
-    private List<TripRequest> pendingRequests;
+    private List<TripRequest> allPendingRequests = new ArrayList<>();
+    private Map<String, String> tripIdToPlate = new HashMap<>();
     private ArrayAdapter<String> routesAdapter, requestsAdapter;
 
     private static final String DRIVER_ID = "driver_001";
@@ -93,11 +94,15 @@ public class DriverActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     driverTrips = response.body();
                     showCurrentRoutes();
+                } else {
+                    Toast.makeText(DriverActivity.this, "Failed to load trips: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Trip>> call, Throwable t) {}
+            public void onFailure(Call<List<Trip>> call, Throwable t) {
+                Toast.makeText(DriverActivity.this, "Error loading trips: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -113,7 +118,7 @@ public class DriverActivity extends AppCompatActivity {
             items.add(t.getNumberPlate() + " - " + t.getRoute() + " (" + t.getAvailableSeats() + " seats)");
         }
 
-        routesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
+        routesAdapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);
         currentRoutesList.setAdapter(routesAdapter);
 
         currentRoutesList.setOnItemClickListener((parent, view, position, id) -> {
@@ -124,6 +129,35 @@ public class DriverActivity extends AppCompatActivity {
             intent.putExtra("numberPlate", trip.getNumberPlate());
             intent.putExtra("route", trip.getRoute());
             startActivity(intent);
+        });
+
+        currentRoutesList.setOnItemLongClickListener((parent, view, position, id) -> {
+            Trip trip = driverTrips.get(position);
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Delete Trip")
+                .setMessage("Are you sure you want to delete this trip (" + trip.getNumberPlate() + ")?")
+                .setPositiveButton("Delete", (dialog, which) -> deleteTrip(trip.getId()))
+                .setNegativeButton("Cancel", null)
+                .show();
+            return true;
+        });
+    }
+
+    private void deleteTrip(String tripId) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "CANCELLED");
+        RetrofitClient.getApiService().updateTrip(tripId, updates).enqueue(new Callback<Trip>() {
+            @Override
+            public void onResponse(Call<Trip> call, Response<Trip> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(DriverActivity.this, "Trip deleted", Toast.LENGTH_SHORT).show();
+                    loadDriverTrips();
+                }
+            }
+            @Override
+            public void onFailure(Call<Trip> call, Throwable t) {
+                Toast.makeText(DriverActivity.this, "Failed to delete", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -239,11 +273,15 @@ public class DriverActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     pendingRequests = response.body();
                     updateRequestsList();
+                } else {
+                    Toast.makeText(DriverActivity.this, "Failed to load requests", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<List<TripRequest>> call, Throwable t) {}
+            public void onFailure(Call<List<TripRequest>> call, Throwable t) {
+                Toast.makeText(DriverActivity.this, "Error loading requests: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -251,7 +289,7 @@ public class DriverActivity extends AppCompatActivity {
         if (pendingRequests == null || pendingRequests.isEmpty()) {
             List<String> empty = new ArrayList<>();
             empty.add("Waiting for requests...");
-            requestsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, empty);
+            requestsAdapter = new ArrayAdapter<>(this, R.layout.item_simple_text, empty);
             requestsListView.setAdapter(requestsAdapter);
             return;
         }
@@ -260,7 +298,7 @@ public class DriverActivity extends AppCompatActivity {
         for (TripRequest req : pendingRequests) {
             items.add(req.getPassengerId() + " at " + req.getPickupPoint() + " (" + req.getStatus() + ")");
         }
-        requestsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
+        requestsAdapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);
         requestsListView.setAdapter(requestsAdapter);
     }
 

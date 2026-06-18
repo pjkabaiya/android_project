@@ -115,7 +115,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         for (TripRequest req : requests) {
             items.add("Pickup: " + req.getPickupPoint() + " (" + req.getStatus() + ")");
         }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);
         activeRequestsList.setAdapter(adapter);
 
         activeRequestsList.setOnItemClickListener((parent, view, position, id) -> {
@@ -123,7 +123,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             Intent intent = new Intent(PassengerDashboardActivity.this, MapViewActivity.class);
             intent.putExtra("tripId", req.getTripId());
             intent.putExtra("isDriver", false);
-            intent.putExtra("numberPlate", currentPlate);
+            intent.putExtra("numberPlate", ""); // We'd need to fetch this or pass it in TripRequest
             intent.putExtra("route", "");
             startActivity(intent);
         });
@@ -138,8 +138,29 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             return;
         }
 
+        // Try searching for the combined route first
         String route = from + " " + to;
         RetrofitClient.getApiService().searchTrips(route, null).enqueue(new Callback<List<Trip>>() {
+            @Override
+            public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    activeTrips = response.body();
+                    showVehicleList();
+                } else {
+                    // If combined search fails, try searching just the "to" destination
+                    searchByDestination(to);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Trip>> call, Throwable t) {
+                searchByDestination(to);
+            }
+        });
+    }
+
+    private void searchByDestination(String to) {
+        RetrofitClient.getApiService().searchTrips(to, null).enqueue(new Callback<List<Trip>>() {
             @Override
             public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
@@ -149,10 +170,9 @@ public class PassengerDashboardActivity extends AppCompatActivity {
                     showNoResults();
                 }
             }
-
             @Override
             public void onFailure(Call<List<Trip>> call, Throwable t) {
-                Toast.makeText(PassengerDashboardActivity.this, "Search failed", Toast.LENGTH_SHORT).show();
+                showNoResults();
             }
         });
     }
@@ -169,7 +189,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             items[i] = t.getNumberPlate() + "  |  " + t.getRoute() + "  |  Seats: " + t.getAvailableSeats();
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);
         vehicleList.setAdapter(adapter);
 
         vehicleList.setOnItemClickListener((parent, view, position, id) -> {
@@ -187,10 +207,14 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         vehicleList.setVisibility(View.GONE);
         txtNoResults.setVisibility(View.VISIBLE);
         requestCard.setVisibility(View.GONE);
+        selectedTripId = null;
     }
 
     private void requestRide() {
-        if (selectedTripId == null) return;
+        if (selectedTripId == null) {
+            Toast.makeText(this, "Please select a vehicle first", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String pickup = editPickupPoint.getText().toString().trim();
         if (pickup.isEmpty()) {
             Toast.makeText(this, "Enter your pickup location", Toast.LENGTH_SHORT).show();
@@ -208,12 +232,14 @@ public class PassengerDashboardActivity extends AppCompatActivity {
                     requestCard.setVisibility(View.GONE);
                     loadActiveRequests();
                     sendSocketRequest(pickup);
+                } else {
+                    Toast.makeText(PassengerDashboardActivity.this, "Request failed: " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<TripRequest> call, Throwable t) {
-                Toast.makeText(PassengerDashboardActivity.this, "Request failed", Toast.LENGTH_SHORT).show();
+                Toast.makeText(PassengerDashboardActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

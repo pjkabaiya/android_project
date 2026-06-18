@@ -17,15 +17,17 @@
             android:id="@+id/txtPassengerId"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Passenger: User123"
-            android:textStyle="bold" />
+        android:text="Passenger: User123"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
 
         <TextView
             android:id="@+id/txtReservationDetails"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="From: Point A To: Point B"
-            android:textSize="14sp" />
+                android:text="From: Point A To: Point B"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary" />
 
         <LinearLayout
             android:layout_width="match_parent"

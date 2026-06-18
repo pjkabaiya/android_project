@@ -1,6 +1,9 @@
 package matatu_system.A1.models;
 
+import com.google.gson.annotations.SerializedName;
+
 public class User {
+    @SerializedName("_id")
     private String id;
     private String firebaseUid;
     private String name;
