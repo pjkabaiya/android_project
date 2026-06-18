@@ -7,13 +7,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +21,6 @@ import matatu_system.A1.api.RetrofitClient;
 import matatu_system.A1.map.MapViewActivity;
 import matatu_system.A1.models.Trip;
 import matatu_system.A1.models.TripRequest;
-import matatu_system.A1.utils.SocketManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -33,18 +28,12 @@ import retrofit2.Response;
 public class DriverActivity extends AppCompatActivity {
 
     private EditText editPlate, editRoute, editSeats;
-    private Button btnStartTrip, btnEndTrip, btnPlus, btnMinus;
-    private View setupCard, tripCard, requestsCard, currentRoutesCard;
-    private TextView txtTripId, txtPlateDisplay, txtRouteDisplay, txtSeatsDisplay;
-    private ListView currentRoutesList, requestsListView;
+    private Button btnStartTrip;
+    private View setupCard, currentRoutesCard;
+    private ListView currentRoutesList;
 
-    private String currentTripId;
-    private String currentPlate;
-    private String currentRoute;
-    private int availableSeats = 14;
     private List<Trip> driverTrips;
-    private List<TripRequest> pendingRequests = new ArrayList<>();
-    private ArrayAdapter<String> routesAdapter, requestsAdapter;
+    private ArrayAdapter<String> routesAdapter;
 
     private static final String DRIVER_ID = "driver_001";
 
@@ -57,27 +46,11 @@ public class DriverActivity extends AppCompatActivity {
         editRoute = findViewById(R.id.editRoute);
         editSeats = findViewById(R.id.editSeats);
         btnStartTrip = findViewById(R.id.btnStartTrip);
-        btnEndTrip = findViewById(R.id.btnEndTrip);
-        btnPlus = findViewById(R.id.btnPlusSeat);
-        btnMinus = findViewById(R.id.btnMinusSeat);
         setupCard = findViewById(R.id.setupCard);
-        tripCard = findViewById(R.id.tripCard);
-        requestsCard = findViewById(R.id.requestsCard);
         currentRoutesCard = findViewById(R.id.currentRoutesCard);
         currentRoutesList = findViewById(R.id.currentRoutesList);
-        requestsListView = findViewById(R.id.requestsListView);
-        txtTripId = findViewById(R.id.txtTripId);
-        txtPlateDisplay = findViewById(R.id.txtPlateDisplay);
-        txtRouteDisplay = findViewById(R.id.txtRouteDisplay);
-        txtSeatsDisplay = findViewById(R.id.txtSeatsDisplay);
 
         btnStartTrip.setOnClickListener(v -> startTrip());
-        btnEndTrip.setOnClickListener(v -> endTrip());
-        btnPlus.setOnClickListener(v -> changeSeats(1));
-        btnMinus.setOnClickListener(v -> changeSeats(-1));
-
-        SocketManager.establishConnection();
-        listenForRequests();
     }
 
     @Override
@@ -122,13 +95,12 @@ public class DriverActivity extends AppCompatActivity {
 
         currentRoutesList.setOnItemClickListener((parent, view, position, id) -> {
             Trip trip = driverTrips.get(position);
-            
+
             String[] options = {"Open Map (View Route)", "Trip Details (Passengers)"};
             new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Select Option")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
-                        // Open Map
                         Intent intent = new Intent(DriverActivity.this, MapViewActivity.class);
                         intent.putExtra("tripId", trip.getId());
                         intent.putExtra("isDriver", true);
@@ -136,7 +108,6 @@ public class DriverActivity extends AppCompatActivity {
                         intent.putExtra("route", trip.getRoute());
                         startActivity(intent);
                     } else {
-                        // Trip Details
                         showTripDetailsDialog(trip);
                     }
                 })
@@ -184,7 +155,7 @@ public class DriverActivity extends AppCompatActivity {
                     sb.append("Route: ").append(trip.getRoute()).append("\n");
                     sb.append("Plate: ").append(trip.getNumberPlate()).append("\n\n");
                     sb.append("Passengers:\n");
-                    
+
                     if (reqs.isEmpty()) {
                         sb.append("- No passengers yet");
                     } else {
@@ -228,7 +199,7 @@ public class DriverActivity extends AppCompatActivity {
             return;
         }
 
-        availableSeats = seatsStr.isEmpty() ? 14 : Integer.parseInt(seatsStr);
+        int availableSeats = seatsStr.isEmpty() ? 14 : Integer.parseInt(seatsStr);
 
         Trip trip = new Trip(plate, route, availableSeats, DRIVER_ID);
         RetrofitClient.getApiService().createTrip(trip).enqueue(new Callback<Trip>() {
@@ -237,7 +208,6 @@ public class DriverActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     String tripId = response.body().getId();
 
-                    // Launch map to create the route visually
                     Intent intent = new Intent(DriverActivity.this, MapViewActivity.class);
                     intent.putExtra("tripId", tripId);
                     intent.putExtra("isDriver", true);
@@ -247,7 +217,6 @@ public class DriverActivity extends AppCompatActivity {
                     intent.putExtra("createRouteDirect", true);
                     startActivity(intent);
 
-                    // Refresh trips list
                     loadDriverTrips();
                 } else {
                     Toast.makeText(DriverActivity.this, "Failed to start trip", Toast.LENGTH_SHORT).show();
@@ -259,135 +228,5 @@ public class DriverActivity extends AppCompatActivity {
                 Toast.makeText(DriverActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void showTripActive() {
-        setupCard.setVisibility(View.GONE);
-        tripCard.setVisibility(View.VISIBLE);
-        requestsCard.setVisibility(View.VISIBLE);
-        txtTripId.setText("Trip ID: " + currentTripId);
-        txtPlateDisplay.setText("Plate: " + currentPlate);
-        txtRouteDisplay.setText("Route: " + currentRoute);
-        updateSeatDisplay();
-        loadTripRequests();
-    }
-
-    private void joinTripRoom() {
-        if (SocketManager.getSocket() != null) {
-            try {
-                JSONObject data = new JSONObject();
-                data.put("tripId", currentTripId);
-                SocketManager.getSocket().emit("driver-join", data);
-            } catch (JSONException e) { e.printStackTrace(); }
-        }
-    }
-
-    private void changeSeats(int delta) {
-        availableSeats = Math.max(0, Math.min(60, availableSeats + delta));
-        updateSeatDisplay();
-        updateSeatsOnBackend();
-    }
-
-    private void updateSeatDisplay() {
-        txtSeatsDisplay.setText("Available Seats: " + availableSeats);
-    }
-
-    private void updateSeatsOnBackend() {
-        if (currentTripId == null) return;
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("availableSeats", availableSeats);
-        RetrofitClient.getApiService().updateTrip(currentTripId, updates).enqueue(new Callback<Trip>() {
-            @Override
-            public void onResponse(Call<Trip> call, Response<Trip> response) {}
-            @Override
-            public void onFailure(Call<Trip> call, Throwable t) {}
-        });
-    }
-
-    private void endTrip() {
-        if (currentTripId == null) return;
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "COMPLETED");
-        updates.put("availableSeats", availableSeats);
-        RetrofitClient.getApiService().updateTrip(currentTripId, updates).enqueue(new Callback<Trip>() {
-            @Override
-            public void onResponse(Call<Trip> call, Response<Trip> response) {
-                currentTripId = null;
-                tripCard.setVisibility(View.GONE);
-                requestsCard.setVisibility(View.GONE);
-                setupCard.setVisibility(View.VISIBLE);
-                editPlate.setText("");
-                editRoute.setText("");
-                loadDriverTrips();
-                Toast.makeText(DriverActivity.this, "Trip ended", Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onFailure(Call<Trip> call, Throwable t) {
-                Toast.makeText(DriverActivity.this, "Error ending trip", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void loadTripRequests() {
-        if (currentTripId == null) return;
-        RetrofitClient.getApiService().getTripRequests(currentTripId).enqueue(new Callback<List<TripRequest>>() {
-            @Override
-            public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    pendingRequests = response.body();
-                    updateRequestsList();
-                } else {
-                    Toast.makeText(DriverActivity.this, "Failed to load requests", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<TripRequest>> call, Throwable t) {
-                Toast.makeText(DriverActivity.this, "Error loading requests: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void updateRequestsList() {
-        if (pendingRequests == null || pendingRequests.isEmpty()) {
-            List<String> empty = new ArrayList<>();
-            empty.add("Waiting for requests...");
-            requestsAdapter = new ArrayAdapter<>(this, R.layout.item_simple_text, empty);
-            requestsListView.setAdapter(requestsAdapter);
-            return;
-        }
-
-        List<String> items = new ArrayList<>();
-        for (TripRequest req : pendingRequests) {
-            items.add(req.getPassengerId() + " at " + req.getPickupPoint() + " (" + req.getStatus() + ")");
-        }
-        requestsAdapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);
-        requestsListView.setAdapter(requestsAdapter);
-    }
-
-    private void listenForRequests() {
-        if (SocketManager.getSocket() != null) {
-            SocketManager.getSocket().on("reservation-update", args -> {
-                if (args.length > 0) {
-                    try {
-                        JSONObject data = (JSONObject) args[0];
-                        String tripId = data.optString("tripId");
-                        if (tripId.equals(currentTripId)) {
-                            runOnUiThread(() -> {
-                                loadTripRequests();
-                                Toast.makeText(this, "New request at " + data.optString("pickupPoint"), Toast.LENGTH_LONG).show();
-                            });
-                        }
-                    } catch (Exception e) { e.printStackTrace(); }
-                }
-            });
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        SocketManager.releaseConnection();
     }
 }

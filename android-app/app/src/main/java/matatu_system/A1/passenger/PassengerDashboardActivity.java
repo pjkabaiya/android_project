@@ -25,7 +25,6 @@ import matatu_system.A1.api.RetrofitClient;
 import matatu_system.A1.map.MapViewActivity;
 import matatu_system.A1.models.Trip;
 import matatu_system.A1.models.TripRequest;
-import matatu_system.A1.utils.SocketManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -60,8 +59,6 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         activeRequestsList = findViewById(R.id.activeRequestsList);
 
         btnSearch.setOnClickListener(v -> searchTrips());
-
-        SocketManager.establishConnection();
 
         passengerLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -112,7 +109,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             Intent intent = new Intent(PassengerDashboardActivity.this, MapViewActivity.class);
             intent.putExtra("tripId", req.getTripId());
             intent.putExtra("isDriver", false);
-            intent.putExtra("numberPlate", ""); // We'd need to fetch this or pass it in TripRequest
+            intent.putExtra("numberPlate", "");
             intent.putExtra("route", "");
             startActivity(intent);
         });
@@ -127,7 +124,6 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             return;
         }
 
-        // Try searching for the combined route first
         String route = from + " " + to;
         RetrofitClient.getApiService().searchTrips(route, null).enqueue(new Callback<List<Trip>>() {
             @Override
@@ -140,7 +136,6 @@ public class PassengerDashboardActivity extends AppCompatActivity {
                         showVehicleList();
                     }
                 } else {
-                    // If combined search fails, try searching just the "to" destination
                     searchByDestination(to);
                 }
             }
@@ -219,11 +214,5 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         txtResultsHeader.setVisibility(View.GONE);
         vehicleList.setVisibility(View.GONE);
         txtNoResults.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        SocketManager.releaseConnection();
     }
 }
