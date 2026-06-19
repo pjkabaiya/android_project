@@ -204,12 +204,25 @@ public class MapViewActivity extends AppCompatActivity {
         if (selectingPickup) txtStatus.setText("Tap map to set pickup point");
     }
 
+    private GeoPoint snapToRoute(GeoPoint tap) {
+        ArrayList<GeoPoint> pts = (routePoints != null && !routePoints.isEmpty()) ? routePoints : waypoints;
+        if (pts.isEmpty()) return tap;
+        GeoPoint nearest = null;
+        double minDist = Double.MAX_VALUE;
+        for (GeoPoint pt : pts) {
+            double d = haversineKm(tap.getLatitude(), tap.getLongitude(), pt.getLatitude(), pt.getLongitude());
+            if (d < minDist) { minDist = d; nearest = pt; }
+        }
+        return nearest != null ? nearest : tap;
+    }
+
     private void setPickupPoint(GeoPoint p) {
-        currentLat = p.getLatitude();
-        currentLng = p.getLongitude();
+        GeoPoint snapped = snapToRoute(p);
+        currentLat = snapped.getLatitude();
+        currentLng = snapped.getLongitude();
         selectingPickup = false;
         btnSetPickup.setText("Pickup Set");
-        txtStatus.setText("Pickup point updated!");
+        txtStatus.setText("Pickup set on route!");
         
         // Show name input dialog
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
@@ -402,15 +415,13 @@ public class MapViewActivity extends AppCompatActivity {
                     JSONArray coordinates = geometry.getJSONArray("coordinates");
 
                     ArrayList<GeoPoint> newRoutePoints = new ArrayList<>();
-                    List<List<Double>> pathForApi = new ArrayList<>();
+                    List<Trip.RoutePoint> pathForApi = new ArrayList<>();
                     for (int i = 0; i < coordinates.length(); i++) {
                         JSONArray coord = coordinates.getJSONArray(i);
                         double lat = coord.getDouble(1);
                         double lng = coord.getDouble(0);
                         newRoutePoints.add(new GeoPoint(lat, lng));
-                        List<Double> point = new ArrayList<>();
-                        point.add(lat); point.add(lng);
-                        pathForApi.add(point);
+                        pathForApi.add(new Trip.RoutePoint(lat, lng));
                     }
 
                     runOnUiThread(() -> {
@@ -435,7 +446,7 @@ public class MapViewActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void saveRouteToBackend(List<List<Double>> path) {
+    private void saveRouteToBackend(List<Trip.RoutePoint> path) {
         if (tripId == null) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("routePath", path);
@@ -447,23 +458,21 @@ public class MapViewActivity extends AppCompatActivity {
 
     private void loadTripData() {
         if (tripId == null) return;
-        RetrofitClient.getApiService().searchTrips(null, null).enqueue(new Callback<List<Trip>>() {
+        RetrofitClient.getApiService().getTrip(tripId).enqueue(new Callback<Trip>() {
             @Override
-            public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
+            public void onResponse(Call<Trip> call, Response<Trip> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    for (Trip trip : response.body()) {
-                        if (tripId.equals(trip.getId()) && trip.getRoutePath() != null) {
-                            routePoints.clear();
-                            for (Trip.RoutePoint point : trip.getRoutePath()) {
-                                routePoints.add(new GeoPoint(point.lat, point.lng));
-                            }
-                            drawRoute();
-                            break;
+                    Trip trip = response.body();
+                    if (trip.getRoutePath() != null && !trip.getRoutePath().isEmpty()) {
+                        routePoints.clear();
+                        for (Trip.RoutePoint point : trip.getRoutePath()) {
+                            routePoints.add(new GeoPoint(point.lat, point.lng));
                         }
+                        drawRoute();
                     }
                 }
             }
-            @Override public void onFailure(Call<List<Trip>> call, Throwable t) {}
+            @Override public void onFailure(Call<Trip> call, Throwable t) {}
         });
     }
 
