@@ -101,7 +101,8 @@ export default function MapView() {
   const waypointsRef = useRef([]);
   const simulatingRef = useRef(false);
   const requestsRef = useRef([]);
-  const passengerIdRef = useRef(`passenger_${Date.now()}`);
+  const getUser = () => { const s = localStorage.getItem('auth_user'); return s ? JSON.parse(s) : null; };
+  const passengerIdRef = useRef(getUser()?.firebaseUid || getUser()?.email || `passenger_${Date.now()}`);
 
   // Keep refs in sync
   useEffect(() => { routePointsRef.current = routePoints; }, [routePoints]);

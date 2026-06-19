@@ -5,7 +5,6 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
@@ -40,6 +39,7 @@ import matatu_system.A1.R;
 import matatu_system.A1.api.RetrofitClient;
 import matatu_system.A1.models.Trip;
 import matatu_system.A1.models.TripRequest;
+import matatu_system.A1.utils.SessionManager;
 import matatu_system.A1.utils.SocketManager;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -218,11 +218,10 @@ public class MapViewActivity extends AppCompatActivity {
     }
 
     private String getPassengerId() {
-        SharedPreferences prefs = getSharedPreferences("matatu_prefs", MODE_PRIVATE);
-        String id = prefs.getString("passengerId", null);
+        SessionManager sm = new SessionManager(this);
+        String id = sm.getUid();
         if (id == null) {
             id = "passenger_" + System.currentTimeMillis();
-            prefs.edit().putString("passengerId", id).apply();
         }
         return id;
     }

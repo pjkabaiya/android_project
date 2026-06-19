@@ -37,8 +37,7 @@ public class DriverActivity extends AppCompatActivity {
 
     private List<Trip> driverTrips;
     private ArrayAdapter<String> routesAdapter;
-
-    private static final String DRIVER_ID = "driver_001";
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +54,7 @@ public class DriverActivity extends AppCompatActivity {
 
         btnStartTrip.setOnClickListener(v -> startTrip());
 
-        SessionManager sessionManager = new SessionManager(this);
+        sessionManager = new SessionManager(this);
         MaterialButton btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> sessionManager.logout(this));
     }
@@ -67,7 +66,7 @@ public class DriverActivity extends AppCompatActivity {
     }
 
     private void loadDriverTrips() {
-        RetrofitClient.getApiService().searchTrips(null, DRIVER_ID).enqueue(new Callback<List<Trip>>() {
+        RetrofitClient.getApiService().searchTrips(null, sessionManager.getUid()).enqueue(new Callback<List<Trip>>() {
             @Override
             public void onResponse(Call<List<Trip>> call, Response<List<Trip>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -208,7 +207,7 @@ public class DriverActivity extends AppCompatActivity {
 
         int availableSeats = seatsStr.isEmpty() ? 14 : Integer.parseInt(seatsStr);
 
-        Trip trip = new Trip(plate, route, availableSeats, DRIVER_ID);
+        Trip trip = new Trip(plate, route, availableSeats, sessionManager.getUid());
         RetrofitClient.getApiService().createTrip(trip).enqueue(new Callback<Trip>() {
             @Override
             public void onResponse(Call<Trip> call, Response<Trip> response) {
