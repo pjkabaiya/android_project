@@ -72,6 +72,25 @@ app.get('/users/:firebaseUid', async (req, res) => {
   }
 });
 
+app.patch('/users/:firebaseUid', async (req, res) => {
+  try {
+    const { name, numberPlate, phone } = req.body;
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (numberPlate !== undefined) updates.numberPlate = numberPlate;
+    if (phone !== undefined) updates.phone = phone;
+    const user = await User.findOneAndUpdate(
+      { firebaseUid: req.params.firebaseUid },
+      { $set: updates },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Mount API routes (they'll be added in routes folder)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/vehicles', require('./routes/vehicles'));

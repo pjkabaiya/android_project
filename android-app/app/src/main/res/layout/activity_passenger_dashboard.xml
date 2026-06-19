@@ -32,6 +32,16 @@
             android:textColor="@color/matatu_black" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnProfile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Profile"
+            android:textSize="12sp"
+            app:cornerRadius="8dp"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_marginEnd="6dp" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

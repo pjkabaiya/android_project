@@ -19,6 +19,7 @@ import java.util.Map;
 
 import com.google.android.material.button.MaterialButton;
 
+import matatu_system.A1.ProfileActivity;
 import matatu_system.A1.R;
 import matatu_system.A1.api.RetrofitClient;
 import matatu_system.A1.map.MapViewActivity;
@@ -58,6 +59,8 @@ public class DriverActivity extends AppCompatActivity {
         sessionManager = new SessionManager(this);
         MaterialButton btnLogout = findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> sessionManager.logout(this));
+        MaterialButton btnProfile = findViewById(R.id.btnProfile);
+        btnProfile.setOnClickListener(v -> startActivity(new Intent(DriverActivity.this, ProfileActivity.class)));
     }
 
     @Override

@@ -35,6 +35,16 @@
                 android:textColor="@color/matatu_black" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnProfile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Profile"
+                android:textSize="12sp"
+                app:cornerRadius="8dp"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_marginEnd="6dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLogout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -98,6 +108,7 @@
                     android:hint="@string/number_plate_hint"
                     android:inputType="textCapCharacters"
                     android:layout_marginBottom="12dp"
+                    android:textColor="@color/matatu_black"
                     android:textColorHint="@color/text_secondary" />
 
                 <EditText
@@ -106,6 +117,7 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/route_hint"
                     android:layout_marginBottom="12dp"
+                    android:textColor="@color/matatu_black"
                     android:textColorHint="@color/text_secondary" />
 
                 <EditText
@@ -116,6 +128,7 @@
                     android:inputType="number"
                     android:text="14"
                     android:layout_marginBottom="16dp"
+                    android:textColor="@color/matatu_black"
                     android:textColorHint="@color/text_secondary" />
 
                 <com.google.android.material.button.MaterialButton

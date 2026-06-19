@@ -8,7 +8,10 @@ public class User {
     private String firebaseUid;
     private String name;
     private String email;
-    private String role; // passenger, driver, admin
+    private String role;
+    private String numberPlate;
+    private String phone;
+    private String createdAt;
 
     public User() {}
 
@@ -33,4 +36,13 @@ public class User {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public String getNumberPlate() { return numberPlate; }
+    public void setNumberPlate(String numberPlate) { this.numberPlate = numberPlate; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 }

@@ -21,6 +21,9 @@ public interface ApiService {
     @GET("users/{firebaseUid}")
     Call<User> getUserProfile(@Path("firebaseUid") String firebaseUid);
 
+    @PATCH("users/{firebaseUid}")
+    Call<User> updateUserProfile(@Path("firebaseUid") String firebaseUid, @Body Map<String, Object> updates);
+
     @POST("api/trips")
     Call<Trip> createTrip(@Body Trip trip);
 
