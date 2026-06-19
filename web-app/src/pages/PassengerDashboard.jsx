@@ -3,17 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { searchTrips, getPassengerRequests, updateRequestStatus } from '../api';
 import { getSocket } from '../socket';
 
-function getPassengerId() {
-  let id = sessionStorage.getItem('passengerId');
-  if (!id) {
-    id = 'passenger_' + Date.now();
-    sessionStorage.setItem('passengerId', id);
-  }
-  return id;
+function getUser() {
+  const s = localStorage.getItem('auth_user');
+  return s ? JSON.parse(s) : null;
+}
+
+function getPassengerId(user) {
+  return user?.firebaseUid || user?.email || 'passenger_' + Date.now();
 }
 
 export default function PassengerDashboard() {
   const navigate = useNavigate();
+  const user = getUser();
+  const passengerId = getPassengerId(user);
+
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [trips, setTrips] = useState([]);
@@ -23,16 +26,12 @@ export default function PassengerDashboard() {
   const [myRequests, setMyRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
 
-  const passengerId = getPassengerId();
-
   const loadRequests = useCallback(async () => {
     setLoadingRequests(true);
     try {
       const data = await getPassengerRequests(passengerId);
       setMyRequests(data || []);
-    } catch {
-      setMyRequests([]);
-    }
+    } catch { setMyRequests([]); }
     setLoadingRequests(false);
   }, [passengerId]);
 
@@ -42,9 +41,13 @@ export default function PassengerDashboard() {
     return () => { s.disconnect(); };
   }, []);
 
-  useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
+  useEffect(() => { loadRequests(); }, [loadRequests]);
+
+  function logout() {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    navigate('/login', { replace: true });
+  }
 
   async function handleSearch() {
     if (!from.trim() || !to.trim()) return alert('Enter both locations');
@@ -61,12 +64,8 @@ export default function PassengerDashboard() {
       if (data && data.length > 0) {
         setTrips(data);
         setShowResults(true);
-      } else {
-        setNoResults(true);
-      }
-    } catch {
-      setNoResults(true);
-    }
+      } else { setNoResults(true); }
+    } catch { setNoResults(true); }
     setLoading(false);
   }
 
@@ -79,9 +78,7 @@ export default function PassengerDashboard() {
     try {
       await updateRequestStatus(req.id, { status: 'CANCELLED' });
       loadRequests();
-    } catch {
-      alert('Failed to cancel request');
-    }
+    } catch { alert('Failed to cancel request'); }
   }
 
   function statusStyle(status) {
@@ -99,8 +96,10 @@ export default function PassengerDashboard() {
     <div style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
         <span style={{ fontSize: 28 }}>🚐</span>
-        <h1 style={{ fontSize: 24, color: 'var(--black)' }}>Find Your Ride</h1>
+        <h1 style={{ fontSize: 24, color: 'var(--black)', flex: 1 }}>Find Your Ride</h1>
+        <button className="btn btn-danger btn-small" onClick={logout}>Logout</button>
       </div>
+      <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16 }}>{user?.email || ''}</p>
 
       {myRequests.length > 0 && (
         <div style={{ marginBottom: 16 }}>
@@ -111,8 +110,7 @@ export default function PassengerDashboard() {
           {myRequests.map(req => {
             const trip = req.tripId && typeof req.tripId === 'object' ? req.tripId : null;
             return (
-              <div key={req.id} className="card"
-                style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div key={req.id} className="card" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ flex: 1, cursor: 'pointer' }}
                   onClick={() => goToMap(trip ? trip.id : req.tripId, trip?.numberPlate || '', trip?.route || '')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -125,17 +123,11 @@ export default function PassengerDashboard() {
                     </div>
                   </div>
                 </div>
-                <span style={{
-                  fontSize: 11, fontWeight: 'bold', padding: '4px 10px', borderRadius: 12,
-                  ...statusStyle(req.status)
-                }}>
+                <span style={{ fontSize: 11, fontWeight: 'bold', padding: '4px 10px', borderRadius: 12, ...statusStyle(req.status) }}>
                   {req.status}
                 </span>
                 {hasPendingStatus(req.status) && (
-                  <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }}
-                    onClick={() => handleCancel(req)}>
-                    Cancel
-                  </button>
+                  <button className="btn btn-danger btn-small" onClick={() => handleCancel(req)}>Cancel</button>
                 )}
               </div>
             );

@@ -16,11 +16,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.android.material.button.MaterialButton;
+
 import matatu_system.A1.R;
 import matatu_system.A1.api.RetrofitClient;
 import matatu_system.A1.map.MapViewActivity;
 import matatu_system.A1.models.Trip;
 import matatu_system.A1.models.TripRequest;
+import matatu_system.A1.utils.SessionManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -51,6 +54,10 @@ public class DriverActivity extends AppCompatActivity {
         currentRoutesList = findViewById(R.id.currentRoutesList);
 
         btnStartTrip.setOnClickListener(v -> startTrip());
+
+        SessionManager sessionManager = new SessionManager(this);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
+        btnLogout.setOnClickListener(v -> sessionManager.logout(this));
     }
 
     @Override

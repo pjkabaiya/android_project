@@ -27,9 +27,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.android.material.button.MaterialButton;
+
 import matatu_system.A1.R;
 import matatu_system.A1.api.RetrofitClient;
 import matatu_system.A1.map.MapViewActivity;
+import matatu_system.A1.utils.SessionManager;
 import matatu_system.A1.models.Trip;
 import matatu_system.A1.models.TripRequest;
 import retrofit2.Call;
@@ -43,21 +46,13 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     private ListView vehicleList, activeRequestsList;
     private TextView txtResultsHeader, txtNoResults;
     private View activeRequestsCard;
+    private SessionManager sessionManager;
 
     private List<Trip> activeTrips;
     private List<TripRequest> myRequests = new ArrayList<>();
     private Map<String, Trip> requestTripMap = new HashMap<>();
     private RequestAdapter requestAdapter;
 
-    private String getPassengerId() {
-        SharedPreferences prefs = getSharedPreferences("matatu_prefs", MODE_PRIVATE);
-        String id = prefs.getString("passengerId", null);
-        if (id == null) {
-            id = "passenger_" + System.currentTimeMillis();
-            prefs.edit().putString("passengerId", id).apply();
-        }
-        return id;
-    }
     private LocationManager passengerLocationManager;
     private double currentLat = -1.286389;
     private double currentLng = 36.817223;
@@ -100,6 +95,10 @@ public class PassengerDashboardActivity extends AppCompatActivity {
                 currentLng = location.getLongitude();
             }, null);
         }
+
+        sessionManager = new SessionManager(this);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
+        btnLogout.setOnClickListener(v -> sessionManager.logout(this));
     }
 
     @Override
@@ -109,7 +108,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     }
 
     private void loadActiveRequests() {
-        RetrofitClient.getApiService().getPassengerRequestsWithProcessed(getPassengerId(), true).enqueue(new Callback<List<TripRequest>>() {
+        RetrofitClient.getApiService().getPassengerRequestsWithProcessed(sessionManager.getUid(), true).enqueue(new Callback<List<TripRequest>>() {
             @Override
             public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {

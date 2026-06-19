@@ -1,10 +1,13 @@
 const API = '/api';
 
+function authHeaders() {
+  const token = localStorage.getItem('auth_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 async function req(url, opts = {}) {
-  const res = await fetch(`${API}${url}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts,
-  });
+  const headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(opts.headers || {}) };
+  const res = await fetch(`${API}${url}`, { ...opts, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Request failed: ${res.status}`);
@@ -61,4 +64,17 @@ export function getPassengerRequests(passengerId) {
 
 export function registerUser(user) {
   return req('/users/register', { method: 'POST', body: JSON.stringify(user) });
+}
+
+// Auth API
+export function signUp(email, password, name, role) {
+  return req('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, name, role }) });
+}
+
+export function logIn(email, password) {
+  return req('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+}
+
+export function getMe() {
+  return req('/auth/me');
 }

@@ -1,8 +1,6 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export default function Home() {
-  const navigate = useNavigate();
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -26,19 +24,13 @@ export default function Home() {
         <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Web Edition</p>
       </div>
 
-      <button className="btn btn-primary" style={{ width: '100%', maxWidth: 360, height: 72, fontSize: 18, marginBottom: 16 }}
-        onClick={() => navigate('/passenger')}>
-        🧑 Find Your Ride
-      </button>
+      <Link to="/login" className="btn btn-primary" style={{ width: '100%', maxWidth: 360, height: 56, fontSize: 16, marginBottom: 12, textDecoration: 'none' }}>
+        Sign In
+      </Link>
 
-      <button className="btn btn-secondary" style={{ width: '100%', maxWidth: 360, height: 72, fontSize: 18 }}
-        onClick={() => navigate('/driver')}>
-        🚐 Driver Dashboard
-      </button>
-
-      <p style={{ marginTop: 32, color: 'var(--text-secondary)', fontSize: 12 }}>
-        (Authentication Bypassed)
-      </p>
+      <Link to="/register" className="btn btn-secondary" style={{ width: '100%', maxWidth: 360, height: 56, fontSize: 16, textDecoration: 'none' }}>
+        Create Account
+      </Link>
     </div>
   );
 }
