@@ -74,8 +74,24 @@ router.get('/requests', async (req, res) => {
 
 router.patch('/requests/:id', async (req, res) => {
   try {
-    const request = await TripRequest.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const request = await TripRequest.findById(req.params.id);
     if (!request) return res.status(404).json({ error: 'Request not found' });
+
+    const wasAccept = req.body.status === 'ACCEPTED' && request.status === 'WAITING';
+
+    Object.assign(request, req.body);
+    await request.save();
+
+    if (wasAccept) {
+      const trip = await Trip.findById(request.tripId);
+      if (trip && typeof trip.availableSeats === 'number') {
+        trip.availableSeats = Math.max(0, trip.availableSeats - 1);
+        await trip.save();
+      }
+      const io = req.app && req.app.get && req.app.get('io');
+      if (io) io.to(`trip_${request.tripId}`).emit('request-accepted', { requestId: request.id, tripId: request.tripId });
+    }
+
     res.json(request);
   } catch (err) {
     res.status(400).json({ error: err.message });
