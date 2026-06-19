@@ -6,6 +6,7 @@ backend/.env
 
 # Firebase service account
 firebase_service_account.json
+backend/serviceAccountKey.json
 
 # Android build
 android-app/app/build/
