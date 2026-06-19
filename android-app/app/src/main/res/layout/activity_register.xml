@@ -76,7 +76,9 @@
                     android:background="@drawable/bg_input"
                     android:padding="12dp"
                     android:layout_marginBottom="12dp"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/matatu_black"
+                    android:textColorHint="@color/text_secondary" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -97,6 +99,8 @@
                     android:padding="12dp"
                     android:layout_marginBottom="12dp"
                     android:textSize="14sp"
+                    android:textColor="@color/matatu_black"
+                    android:textColorHint="@color/text_secondary"
                     android:importantForAutofill="no" />
 
                 <TextView
@@ -118,6 +122,8 @@
                     android:padding="12dp"
                     android:layout_marginBottom="16dp"
                     android:textSize="14sp"
+                    android:textColor="@color/matatu_black"
+                    android:textColorHint="@color/text_secondary"
                     android:importantForAutofill="no" />
 
                 <TextView
