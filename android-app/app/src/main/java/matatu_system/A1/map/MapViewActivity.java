@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
@@ -216,67 +217,51 @@ public class MapViewActivity extends AppCompatActivity {
         return nearest != null ? nearest : tap;
     }
 
+    private String getPassengerId() {
+        SharedPreferences prefs = getSharedPreferences("matatu_prefs", MODE_PRIVATE);
+        String id = prefs.getString("passengerId", null);
+        if (id == null) {
+            id = "passenger_" + System.currentTimeMillis();
+            prefs.edit().putString("passengerId", id).apply();
+        }
+        return id;
+    }
+
     private void setPickupPoint(GeoPoint p) {
         GeoPoint snapped = snapToRoute(p);
         currentLat = snapped.getLatitude();
         currentLng = snapped.getLongitude();
         selectingPickup = false;
         btnSetPickup.setText("Pickup Set");
-        txtStatus.setText("Pickup set on route!");
-        
-        // Show name input dialog
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-        builder.setTitle("Enter Your Name");
-        final android.widget.EditText input = new android.widget.EditText(this);
-        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
-        input.setHint("Your name");
-        builder.setView(input);
-        
-        builder.setPositiveButton("OK", (dialog, which) -> {
-            String passengerName = input.getText().toString().trim();
-            if (passengerName.isEmpty()) {
-                passengerName = "Passenger";
-            }
-            
-            // Add marker on map
-            TripRequest dummy = new TripRequest(tripId, "PASSENGER", passengerName);
-            dummy.setPassengerLat(currentLat);
-            dummy.setPassengerLng(currentLng);
-            dummy.setStatus("WAITING");
-            addPassengerMarker(dummy);
-            
-            // Create the trip request
-            createTripRequestWithName(passengerName);
-        });
-        
-        builder.setNegativeButton("Cancel", (dialog, which) -> {
-            selectingPickup = true;
-            btnSetPickup.setText("Tap Map");
-            txtStatus.setText("Tap map to set your pickup point");
-            dialog.cancel();
-        });
-        
-        builder.show();
-    }
+        txtStatus.setText("Pickup set on route! Requesting ride...");
 
-    private void createTripRequestWithName(String passengerName) {
-        String passengerId = "passenger_" + System.currentTimeMillis();
-        TripRequest req = new TripRequest(tripId, passengerId, passengerName);
+        String passengerId = getPassengerId();
+        TripRequest req = new TripRequest(tripId, passengerId, "Map Selection");
         req.setPassengerLat(currentLat);
         req.setPassengerLng(currentLng);
-        
+
+        TripRequest dummy = new TripRequest(tripId, passengerId, "Map Selection");
+        dummy.setPassengerLat(currentLat);
+        dummy.setPassengerLng(currentLng);
+        dummy.setStatus("WAITING");
+        addPassengerMarker(dummy);
+
+        createRideRequest(req);
+    }
+
+    private void createRideRequest(TripRequest req) {
         RetrofitClient.getApiService().createTripRequest(tripId, req).enqueue(new Callback<TripRequest>() {
             @Override
             public void onResponse(Call<TripRequest> call, Response<TripRequest> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(MapViewActivity.this, "Ride requested with location!", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MapViewActivity.this, "Ride requested!", Toast.LENGTH_LONG).show();
                     loadRequests();
-                    
+
                     if (SocketManager.getSocket() != null) {
                         try {
                             JSONObject data = new JSONObject();
                             data.put("tripId", tripId);
-                            data.put("pickupPoint", passengerName);
+                            data.put("pickupPoint", req.getPickupPoint());
                             data.put("type", "passenger_request");
                             data.put("passengerLat", currentLat);
                             data.put("passengerLng", currentLng);
@@ -841,34 +826,13 @@ public class MapViewActivity extends AppCompatActivity {
             Toast.makeText(this, "Please tap 'Set Pickup' and select a point on map", Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        String passengerId = "passenger_" + System.currentTimeMillis();
+
+        String passengerId = getPassengerId();
         TripRequest req = new TripRequest(tripId, passengerId, "Map Selection");
         req.setPassengerLat(currentLat);
         req.setPassengerLng(currentLng);
-        
-        RetrofitClient.getApiService().createTripRequest(tripId, req).enqueue(new Callback<TripRequest>() {
-            @Override
-            public void onResponse(Call<TripRequest> call, Response<TripRequest> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(MapViewActivity.this, "Ride requested at map location!", Toast.LENGTH_LONG).show();
-                    loadRequests();
-                    
-                    if (SocketManager.getSocket() != null) {
-                        try {
-                            JSONObject data = new JSONObject();
-                            data.put("tripId", tripId);
-                            data.put("pickupPoint", "Map Selection");
-                            data.put("type", "passenger_request");
-                            data.put("passengerLat", currentLat);
-                            data.put("passengerLng", currentLng);
-                            SocketManager.getSocket().emit("reservation-update", data);
-                        } catch (JSONException e) { e.printStackTrace(); }
-                    }
-                }
-            }
-            @Override public void onFailure(Call<TripRequest> call, Throwable t) {}
-        });
+
+        createRideRequest(req);
     }
 
     @Override protected void onResume() { super.onResume(); map.onResume(); }

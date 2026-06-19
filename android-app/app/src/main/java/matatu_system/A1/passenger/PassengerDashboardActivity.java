@@ -2,6 +2,7 @@ package matatu_system.A1.passenger;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
 import android.location.Location;
@@ -48,7 +49,15 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     private Map<String, Trip> requestTripMap = new HashMap<>();
     private RequestAdapter requestAdapter;
 
-    private static final String PASSENGER_ID = "passenger_" + System.currentTimeMillis();
+    private String getPassengerId() {
+        SharedPreferences prefs = getSharedPreferences("matatu_prefs", MODE_PRIVATE);
+        String id = prefs.getString("passengerId", null);
+        if (id == null) {
+            id = "passenger_" + System.currentTimeMillis();
+            prefs.edit().putString("passengerId", id).apply();
+        }
+        return id;
+    }
     private LocationManager passengerLocationManager;
     private double currentLat = -1.286389;
     private double currentLng = 36.817223;
@@ -100,7 +109,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     }
 
     private void loadActiveRequests() {
-        RetrofitClient.getApiService().getPassengerRequestsWithProcessed(PASSENGER_ID, true).enqueue(new Callback<List<TripRequest>>() {
+        RetrofitClient.getApiService().getPassengerRequestsWithProcessed(getPassengerId(), true).enqueue(new Callback<List<TripRequest>>() {
             @Override
             public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
