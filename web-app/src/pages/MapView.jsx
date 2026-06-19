@@ -20,7 +20,7 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 
 const vehicleIcon = L.divIcon({
   className: '',
-  html: '<div style="background:#FFC107;border:3px solid #212121;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.3)">🚐</div>',
+  html: '<div style="background:#FFC107;border:3px solid #212121;border-radius:50%;width:24px;height:24px;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });
@@ -34,7 +34,7 @@ const waypointIcon = L.divIcon({
 
 const pickupIcon = L.divIcon({
   className: '',
-  html: '<div style="background:#43A047;border:2px solid white;border-radius:50%;width:20px;height:20px;box-shadow:0 1px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;color:white">📍</div>',
+  html: '<div style="background:#43A047;border:2px solid white;border-radius:50%;width:20px;height:20px;box-shadow:0 1px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;border-radius:50%;background:white"></div></div>',
   iconSize: [20, 20],
   iconAnchor: [10, 10],
 });

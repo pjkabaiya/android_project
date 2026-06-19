@@ -16,9 +16,9 @@ export default function Home() {
           width: 80, height: 80, borderRadius: '50%',
           background: 'var(--yellow)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 16px', fontSize: 36, fontWeight: 'bold', color: 'var(--black)',
+          margin: '0 auto 16px', fontSize: 32, fontWeight: 'bold', color: 'var(--black)', fontFamily: 'serif',
         }}>
-          🚐
+          SM
         </div>
         <h1 style={{ fontSize: 28, color: 'var(--black)', marginBottom: 4 }}>Smart Matatu</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Web Edition</p>

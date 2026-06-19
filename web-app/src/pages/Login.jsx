@@ -29,7 +29,7 @@ export default function Login() {
   return (
     <div style={{ maxWidth: 400, margin: '0 auto', padding: 32, minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🚐</div>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 24, fontWeight: 'bold', color: 'var(--black)', fontFamily: 'serif' }}>SM</div>
         <h1 style={{ fontSize: 24, color: 'var(--black)' }}>Smart Matatu</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Sign in to continue</p>
       </div>

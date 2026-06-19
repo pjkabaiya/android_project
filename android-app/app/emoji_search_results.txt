@@ -1,0 +1,7 @@
+=== NON-ASCII/EMOJI CHARACTERS FOUND ===
+
+FILE: C:\Users\john\OneDrive\Desktop\android programming project\android-app\app\src\main\res\values\strings.xml
+  LINE 17:     <string name="route_hint">Route (e.g. Nairobi → Nakuru)</string>
+  CHAR: → (U+2192) UTF-8 bytes: E2 86 92
+
+=== END OF RESULTS ===

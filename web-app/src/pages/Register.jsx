@@ -31,7 +31,7 @@ export default function Register() {
   return (
     <div style={{ maxWidth: 400, margin: '0 auto', padding: 32, minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>🚐</div>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 24, fontWeight: 'bold', color: 'var(--black)', fontFamily: 'serif' }}>SM</div>
         <h1 style={{ fontSize: 24, color: 'var(--black)' }}>Create Account</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Choose your role to get started</p>
       </div>
@@ -57,12 +57,12 @@ export default function Register() {
             <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
               <label className="card" style={{ flex: 1, padding: 12, textAlign: 'center', cursor: 'pointer', border: role === 'passenger' ? '2px solid var(--yellow)' : '2px solid transparent' }}>
                 <input type="radio" name="role" value="passenger" checked={role === 'passenger'} onChange={() => setRole('passenger')} style={{ display: 'none' }} />
-                <div style={{ fontSize: 24 }}>🧑</div>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#E8E8E8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 'bold', color: 'var(--text-secondary)' }}>P</div>
                 <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>Passenger</div>
               </label>
               <label className="card" style={{ flex: 1, padding: 12, textAlign: 'center', cursor: 'pointer', border: role === 'driver' ? '2px solid var(--yellow)' : '2px solid transparent' }}>
                 <input type="radio" name="role" value="driver" checked={role === 'driver'} onChange={() => setRole('driver')} style={{ display: 'none' }} />
-                <div style={{ fontSize: 24 }}>🚐</div>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#E8E8E8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 'bold', color: 'var(--text-secondary)' }}>D</div>
                 <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>Driver</div>
               </label>
             </div>

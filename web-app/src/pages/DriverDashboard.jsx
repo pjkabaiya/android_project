@@ -60,7 +60,7 @@ export default function DriverDashboard() {
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-        <span style={{ fontSize: 28 }}>🚐</span>
+        <span style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--yellow)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 'bold', color: 'var(--black)', fontFamily: 'serif' }}>SM</span>
         <h1 style={{ fontSize: 24, color: 'var(--black)', flex: 1 }}>Driver Dashboard</h1>
         <button className="btn btn-danger btn-small" onClick={logout}>Logout</button>
       </div>

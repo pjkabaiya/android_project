@@ -95,7 +95,7 @@ export default function PassengerDashboard() {
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-        <span style={{ fontSize: 28 }}>🚐</span>
+        <span style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--yellow)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 'bold', color: 'var(--black)', fontFamily: 'serif' }}>SM</span>
         <h1 style={{ fontSize: 24, color: 'var(--black)', flex: 1 }}>Find Your Ride</h1>
         <button className="btn btn-danger btn-small" onClick={logout}>Logout</button>
       </div>
@@ -114,7 +114,7 @@ export default function PassengerDashboard() {
                 <div style={{ flex: 1, cursor: 'pointer' }}
                   onClick={() => goToMap(trip ? trip.id : req.tripId, trip?.numberPlate || '', trip?.route || '')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 24 }}>🚐</span>
+                    <span style={{ width: 28, height: 28, borderRadius: 4, background: '#1565C0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 'bold', color: 'white' }}>M</span>
                     <div style={{ flex: 1 }}>
                       <strong>{trip ? `${trip.numberPlate}  |  ${trip.route}` : 'Loading...'}</strong>
                       <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -165,7 +165,7 @@ export default function PassengerDashboard() {
             <div key={t.id} className="card" style={{ marginBottom: 8, cursor: 'pointer' }}
               onClick={() => goToMap(t.id, t.numberPlate, t.route)}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 28 }}>🚐</span>
+                <span style={{ width: 32, height: 32, borderRadius: 4, background: '#1565C0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 'bold', color: 'white' }}>M</span>
                 <div style={{ flex: 1 }}>
                   <strong>{t.numberPlate}</strong>
                   <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t.route}</p>
