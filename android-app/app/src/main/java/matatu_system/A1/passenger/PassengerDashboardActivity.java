@@ -3,13 +3,17 @@ package matatu_system.A1.passenger;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.GradientDrawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,7 +22,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import matatu_system.A1.R;
 import matatu_system.A1.api.RetrofitClient;
@@ -38,6 +44,9 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     private View activeRequestsCard;
 
     private List<Trip> activeTrips;
+    private List<TripRequest> myRequests = new ArrayList<>();
+    private Map<String, Trip> requestTripMap = new HashMap<>();
+    private RequestAdapter requestAdapter;
 
     private static final String PASSENGER_ID = "passenger_" + System.currentTimeMillis();
     private LocationManager passengerLocationManager;
@@ -58,7 +67,20 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         activeRequestsCard = findViewById(R.id.activeRequestsCard);
         activeRequestsList = findViewById(R.id.activeRequestsList);
 
+        requestAdapter = new RequestAdapter();
+        activeRequestsList.setAdapter(requestAdapter);
+
         btnSearch.setOnClickListener(v -> searchTrips());
+
+        activeRequestsList.setOnItemClickListener((parent, view, position, id) -> {
+            TripRequest req = myRequests.get(position);
+            Intent intent = new Intent(PassengerDashboardActivity.this, MapViewActivity.class);
+            intent.putExtra("tripId", req.getTripId());
+            intent.putExtra("isDriver", false);
+            intent.putExtra("numberPlate", "");
+            intent.putExtra("route", "");
+            startActivity(intent);
+        });
 
         passengerLocationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -78,12 +100,17 @@ public class PassengerDashboardActivity extends AppCompatActivity {
     }
 
     private void loadActiveRequests() {
-        RetrofitClient.getApiService().getPassengerRequests(PASSENGER_ID).enqueue(new Callback<List<TripRequest>>() {
+        RetrofitClient.getApiService().getPassengerRequestsWithProcessed(PASSENGER_ID, true).enqueue(new Callback<List<TripRequest>>() {
             @Override
             public void onResponse(Call<List<TripRequest>> call, Response<List<TripRequest>> response) {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    showActiveRequests(response.body());
+                    myRequests = response.body();
+                    requestTripMap.clear();
+                    for (TripRequest req : myRequests) {
+                        loadTripForRequest(req);
+                    }
                 } else {
+                    myRequests = new ArrayList<>();
                     activeRequestsCard.setVisibility(View.GONE);
                 }
             }
@@ -95,24 +122,97 @@ public class PassengerDashboardActivity extends AppCompatActivity {
         });
     }
 
-    private void showActiveRequests(List<TripRequest> requests) {
-        activeRequestsCard.setVisibility(View.VISIBLE);
-        List<String> items = new ArrayList<>();
-        for (TripRequest req : requests) {
-            items.add("Pickup: " + req.getPickupPoint() + " (" + req.getStatus() + ")");
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_simple_text, items);
-        activeRequestsList.setAdapter(adapter);
-
-        activeRequestsList.setOnItemClickListener((parent, view, position, id) -> {
-            TripRequest req = requests.get(position);
-            Intent intent = new Intent(PassengerDashboardActivity.this, MapViewActivity.class);
-            intent.putExtra("tripId", req.getTripId());
-            intent.putExtra("isDriver", false);
-            intent.putExtra("numberPlate", "");
-            intent.putExtra("route", "");
-            startActivity(intent);
+    private void loadTripForRequest(TripRequest req) {
+        RetrofitClient.getApiService().getTrip(req.getTripId()).enqueue(new Callback<Trip>() {
+            @Override
+            public void onResponse(Call<Trip> call, Response<Trip> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    requestTripMap.put(req.getId(), response.body());
+                    requestAdapter.notifyDataSetChanged();
+                }
+            }
+            @Override
+            public void onFailure(Call<Trip> call, Throwable t) {}
         });
+    }
+
+    private void cancelRequest(TripRequest req, int position) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "CANCELLED");
+        RetrofitClient.getApiService().updateRequestStatus(req.getId(), updates).enqueue(new Callback<TripRequest>() {
+            @Override
+            public void onResponse(Call<TripRequest> call, Response<TripRequest> response) {
+                if (response.isSuccessful()) {
+                    myRequests.remove(position);
+                    requestAdapter.notifyDataSetChanged();
+                    if (myRequests.isEmpty()) activeRequestsCard.setVisibility(View.GONE);
+                    Toast.makeText(PassengerDashboardActivity.this, "Request cancelled", Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(Call<TripRequest> call, Throwable t) {
+                Toast.makeText(PassengerDashboardActivity.this, "Failed to cancel", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private class RequestAdapter extends BaseAdapter {
+        @Override
+        public int getCount() { return myRequests.size(); }
+
+        @Override
+        public TripRequest getItem(int position) { return myRequests.get(position); }
+
+        @Override
+        public long getItemId(int position) { return position; }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = getLayoutInflater().inflate(R.layout.item_request, parent, false);
+            }
+
+            TripRequest req = myRequests.get(position);
+            Trip trip = requestTripMap.get(req.getId());
+
+            TextView tvTitle = convertView.findViewById(R.id.tvTitle);
+            TextView tvSubtitle = convertView.findViewById(R.id.tvSubtitle);
+            TextView tvStatus = convertView.findViewById(R.id.tvStatus);
+            ImageButton btnDelete = convertView.findViewById(R.id.btnDeleteRequest);
+
+            if (trip != null) {
+                tvTitle.setText(trip.getNumberPlate() + "  |  " + trip.getRoute());
+            } else {
+                tvTitle.setText("Loading trip info...");
+            }
+
+            tvSubtitle.setText("Pickup: " + (req.getPickupPoint() != null ? req.getPickupPoint() : "set on map"));
+
+            String status = req.getStatus() != null ? req.getStatus() : "WAITING";
+            tvStatus.setText(status);
+
+            GradientDrawable bg = new GradientDrawable();
+            bg.setShape(GradientDrawable.RECTANGLE);
+            bg.setCornerRadius(24);
+            switch (status) {
+                case "WAITING":
+                    bg.setColor(0xFFFFC107);
+                    break;
+                case "ACCEPTED":
+                    bg.setColor(0xFF43A047);
+                    break;
+                case "REJECTED":
+                    bg.setColor(0xFFD32F2F);
+                    break;
+                default:
+                    bg.setColor(0xFF757575);
+            }
+            tvStatus.setBackground(bg);
+
+            btnDelete.setOnClickListener(v -> cancelRequest(req, position));
+
+            return convertView;
+        }
     }
 
     private void searchTrips() {

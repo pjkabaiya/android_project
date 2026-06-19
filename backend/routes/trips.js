@@ -44,10 +44,18 @@ router.get('/requests', async (req, res) => {
     // By default return only waiting requests (queue)
     if (!req.query.includeProcessed || req.query.includeProcessed !== 'true') {
       filter.status = 'WAITING';
+    } else {
+      filter.status = { $ne: 'CANCELLED' };
+    }
+
+    let query = TripRequest.find(filter);
+
+    if (req.query.populate === 'true') {
+      query = query.populate('tripId');
     }
 
     if (req.query.groupBy === 'vehicle') {
-      const populated = await TripRequest.find(filter).populate('tripId');
+      const populated = await query;
       const grouped = {};
       populated.forEach(r => {
         const key = (r.tripId && r.tripId.numberPlate) || 'unknown';
@@ -57,7 +65,7 @@ router.get('/requests', async (req, res) => {
       return res.json(grouped);
     }
 
-    const requests = await TripRequest.find(filter);
+    const requests = await query;
     res.json(requests);
   } catch (err) {
     res.status(400).json({ error: err.message });

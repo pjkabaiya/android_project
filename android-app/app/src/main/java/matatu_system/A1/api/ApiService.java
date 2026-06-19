@@ -30,6 +30,9 @@ public interface ApiService {
     @GET("api/trips/requests")
     Call<List<TripRequest>> getPassengerRequests(@Query("passengerId") String passengerId);
 
+    @GET("api/trips/requests")
+    Call<List<TripRequest>> getPassengerRequestsWithProcessed(@Query("passengerId") String passengerId, @Query("includeProcessed") boolean includeProcessed);
+
     @GET("api/trips/{id}")
     Call<Trip> getTrip(@Path("id") String id);
 

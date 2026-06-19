@@ -51,6 +51,14 @@ export function rejectRequest(tripId, requestId) {
   return req(`/trips/${tripId}/requests/${requestId}/reject`, { method: 'POST' });
 }
 
+export function getPassengerRequests(passengerId) {
+  const params = new URLSearchParams();
+  if (passengerId) params.set('passengerId', passengerId);
+  params.set('includeProcessed', 'true');
+  params.set('populate', 'true');
+  return req(`/trips/requests?${params}`);
+}
+
 export function registerUser(user) {
   return req('/users/register', { method: 'POST', body: JSON.stringify(user) });
 }
