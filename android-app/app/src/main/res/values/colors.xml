@@ -13,4 +13,5 @@
     <color name="text_secondary">#757575</color>
     <color name="surface">#FFFFFF</color>
     <color name="divider">#E0E0E0</color>
+    <color name="circle_gray">#E8E8E8</color>
 </resources>

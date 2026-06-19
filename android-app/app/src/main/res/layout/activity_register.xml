@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_light">
@@ -11,72 +12,247 @@
         android:orientation="vertical"
         android:padding="24dp">
 
+        <!-- Logo circle -->
+        <LinearLayout
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/circle_yellow"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SM"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/matatu_black"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Register"
-            android:textSize="32sp"
+            android:text="Create Account"
+            android:textSize="24sp"
             android:textStyle="bold"
-            android:layout_marginBottom="32dp"/>
-
-        <EditText
-            android:id="@+id/nameEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Full Name"
-            android:inputType="textPersonName"
-            android:layout_marginBottom="16dp"/>
-
-        <EditText
-            android:id="@+id/emailEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Email"
-            android:inputType="textEmailAddress"
-            android:layout_marginBottom="16dp"/>
-
-        <EditText
-            android:id="@+id/passwordEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:layout_marginBottom="16dp"/>
+            android:textColor="@color/matatu_black" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select Role:"
-            android:layout_gravity="start"
-            android:layout_marginBottom="8dp"/>
+            android:text="Choose your role to get started"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="20dp" />
 
-        <RadioGroup
-            android:id="@+id/roleRadioGroup"
+        <!-- Card container -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="24dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
 
-            <RadioButton
-                android:id="@+id/radioPassenger"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Passenger"
-                android:checked="true"/>
+                android:orientation="vertical"
+                android:padding="20dp">
 
-            <RadioButton
-                android:id="@+id/radioDriver"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Driver"
-                android:layout_marginStart="16dp"/>
-        </RadioGroup>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Full Name"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="4dp" />
 
-        <Button
-            android:id="@+id/registerButton"
-            android:layout_width="match_parent"
+                <EditText
+                    android:id="@+id/nameEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Your name"
+                    android:inputType="textPersonName"
+                    android:background="@drawable/bg_input"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Email"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/emailEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="your@email.com"
+                    android:inputType="textEmailAddress"
+                    android:background="@drawable/bg_input"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:textSize="14sp"
+                    android:importantForAutofill="no" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Password"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/passwordEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="At least 6 characters"
+                    android:inputType="textPassword"
+                    android:background="@drawable/bg_input"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp"
+                    android:textSize="14sp"
+                    android:importantForAutofill="no" />
+
+                <TextView
+                    android:id="@+id/txtError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/matatu_red"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="I am a..."
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Role selector -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="20dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardPassenger"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="@color/surface">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+                            <LinearLayout
+                                android:id="@+id/circlePassenger"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:background="@drawable/circle_gray"
+                                android:gravity="center"
+                                android:layout_marginBottom="6dp">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="P"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_secondary" />
+                            </LinearLayout>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Passenger"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardDriver"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="@color/surface">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+                            <LinearLayout
+                                android:id="@+id/circleDriver"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:background="@drawable/circle_gray"
+                                android:gravity="center"
+                                android:layout_marginBottom="6dp">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="D"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_secondary" />
+                            </LinearLayout>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Driver"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/registerButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="Create Account"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp"
+                    android:backgroundTint="@color/matatu_yellow"
+                    android:textColor="@color/matatu_black" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/loginTextView"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Register" />
+            android:text="Already have an account? Sign In"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="24dp"
+            android:textSize="14sp"
+            android:textColor="@color/matatu_blue" />
 
     </LinearLayout>
 </ScrollView>

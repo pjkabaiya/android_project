@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
   try {
     const filter = { status: 'ON_ROUTE' };
     if (req.query.driverId) {
-      filter.driverId = { $regex: '^' + escapeRegex(req.query.driverId) + '$', $options: 'i' };
+      filter.driverId = req.query.driverId;
     }
     if (req.query.route) {
       const keywords = req.query.route.split(/\s+/).filter(k => /[a-zA-Z0-9]/.test(k));
@@ -39,7 +39,7 @@ router.get('/requests', async (req, res) => {
   try {
     const filter = {};
     if (req.query.passengerId) {
-      filter.passengerId = { $regex: '^' + escapeRegex(req.query.passengerId) + '$', $options: 'i' };
+      filter.passengerId = req.query.passengerId;
     }
     // By default return only waiting requests (queue)
     if (!req.query.includeProcessed || req.query.includeProcessed !== 'true') {
@@ -70,22 +70,33 @@ router.get('/requests', async (req, res) => {
   }
 });
 
+const ALLOWED_REQUEST_FIELDS = ['status', 'pickupPoint', 'passengerLat', 'passengerLng', 'cancellationReason'];
+
 router.patch('/requests/:id', async (req, res) => {
   try {
     const request = await TripRequest.findById(req.params.id);
     if (!request) return res.status(404).json({ error: 'Request not found' });
 
     const wasAccept = req.body.status === 'ACCEPTED' && request.status === 'WAITING';
+    const wasRejectOrCancel = (req.body.status === 'REJECTED' || req.body.status === 'CANCELLED') && request.status === 'ACCEPTED';
 
-    Object.assign(request, req.body);
+    ALLOWED_REQUEST_FIELDS.forEach(f => {
+      if (req.body[f] !== undefined) request[f] = req.body[f];
+    });
     await request.save();
 
-    if (wasAccept) {
-      const trip = await Trip.findById(request.tripId);
-      if (trip && typeof trip.availableSeats === 'number') {
+    const trip = await Trip.findById(request.tripId);
+    if (trip && typeof trip.availableSeats === 'number') {
+      if (wasAccept) {
         trip.availableSeats = Math.max(0, trip.availableSeats - 1);
         await trip.save();
+      } else if (wasRejectOrCancel) {
+        trip.availableSeats = Math.min(trip.availableSeats + 1, 14);
+        await trip.save();
       }
+    }
+
+    if (wasAccept) {
       const io = req.app && req.app.get && req.app.get('io');
       if (io) io.to(`trip_${request.tripId}`).emit('request-accepted', { requestId: request.id, tripId: request.tripId });
     }

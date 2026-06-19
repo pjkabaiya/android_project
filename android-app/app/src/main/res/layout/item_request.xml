@@ -54,7 +54,7 @@
             android:id="@+id/btnDeleteRequest"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:src="@android:drawable/ic_menu_delete"
+            android:src="@drawable/ic_delete"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Cancel request"
             android:tint="@color/matatu_red" />

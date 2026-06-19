@@ -99,13 +99,13 @@ router.get('/profile', async (req, res) => {
     const profile = { name: user.name, email: user.email, role: user.role, memberSince: user.createdAt };
 
     if (user.role === 'driver') {
-      const trips = await Trip.find({ driverId: { $regex: '^' + user.firebaseUid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', $options: 'i' } });
+      const trips = await Trip.find({ driverId: user.firebaseUid });
       profile.totalTrips = trips.length;
       const tripIds = trips.map(t => t._id);
       const accepted = await TripRequest.countDocuments({ tripId: { $in: tripIds }, status: 'ACCEPTED' });
       profile.totalPassengers = accepted;
     } else {
-      const requests = await TripRequest.find({ passengerId: { $regex: '^' + user.firebaseUid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', $options: 'i' } });
+      const requests = await TripRequest.find({ passengerId: user.firebaseUid });
       profile.totalRequests = requests.length;
       profile.accepted = requests.filter(r => r.status === 'ACCEPTED').length;
       profile.rejected = requests.filter(r => r.status === 'REJECTED').length;
