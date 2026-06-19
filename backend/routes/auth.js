@@ -19,13 +19,26 @@ router.post('/signup', async (req, res) => {
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ error: 'Email already registered' });
 
+    // Create user in Firebase Auth so Android can sign in with same credentials
+    let firebaseUid;
+    try {
+      const fbUser = await admin.auth().createUser({
+        email,
+        password,
+        displayName: name,
+      });
+      firebaseUid = fbUser.uid;
+    } catch (fbErr) {
+      return res.status(400).json({ error: 'Failed to create authentication account: ' + fbErr.message });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       email,
       name,
       password: hashedPassword,
       role: role || 'passenger',
-      firebaseUid: 'web_' + Date.now()
+      firebaseUid
     });
     const token = jwt.sign({ uid: user.firebaseUid, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
     res.status(201).json({ token, user });
@@ -40,13 +53,38 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'email and password required' });
 
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) return res.status(401).json({ error: 'Invalid email or password' });
 
-    if (!user.password) return res.status(401).json({ error: 'This account uses Google sign-in' });
+    if (!user.password) return res.status(401).json({ error: 'This account uses Google sign-in. Please use the Android app.' });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid email or password' });
+
+    // Migrate legacy web users (firebaseUid starts with 'web_') to real Firebase Auth
+    if (user.firebaseUid && user.firebaseUid.startsWith('web_')) {
+      try {
+        const fbUser = await admin.auth().createUser({
+          email: user.email,
+          password,
+          displayName: user.name,
+        });
+        user.firebaseUid = fbUser.uid;
+        await user.save();
+      } catch (fbErr) {
+        // If user already exists in Firebase Auth (e.g. from earlier migration attempt),
+        // try to find them by email and update the UID
+        if (fbErr.code === 'auth/email-already-exists') {
+          try {
+            const fbUser = await admin.auth().getUserByEmail(user.email);
+            user.firebaseUid = fbUser.uid;
+            await user.save();
+          } catch (getErr) {
+            // ignore
+          }
+        }
+      }
+    }
 
     const token = jwt.sign({ uid: user.firebaseUid, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user });
@@ -55,7 +93,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Verify Firebase token and return/create user (Android)
+// Verify Firebase token and return/create user (Android + future web Firebase Auth)
 router.post('/verify', async (req, res) => {
   const idToken = req.body.token;
   if (!idToken) return res.status(400).json({ error: 'token required' });
@@ -65,9 +103,16 @@ router.post('/verify', async (req, res) => {
     const firebaseUid = decoded.uid;
     let user = await User.findOne({ firebaseUid });
     if (!user) {
-      user = await User.create({ firebaseUid, email: decoded.email, name: decoded.name || '', role: 'passenger' });
+      const { name, role } = req.body;
+      user = await User.create({
+        firebaseUid,
+        email: decoded.email || '',
+        name: name || decoded.name || '',
+        role: role || 'passenger',
+      });
     }
-    res.json({ user });
+    const token = jwt.sign({ uid: user.firebaseUid, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, user });
   } catch (err) {
     res.status(401).json({ error: 'invalid token', details: err.message });
   }
