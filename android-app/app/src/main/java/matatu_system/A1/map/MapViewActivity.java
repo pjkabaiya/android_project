@@ -515,21 +515,36 @@ public class MapViewActivity extends AppCompatActivity {
 
     private void performDeleteTrip() {
         if (tripId == null) return;
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "CANCELLED");
-        RetrofitClient.getApiService().updateTrip(tripId, updates).enqueue(new Callback<Trip>() {
-            @Override
-            public void onResponse(Call<Trip> call, Response<Trip> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(MapViewActivity.this, "Trip deleted", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            }
-            @Override
-            public void onFailure(Call<Trip> call, Throwable t) {
-                Toast.makeText(MapViewActivity.this, "Failed to delete", Toast.LENGTH_SHORT).show();
-            }
-        });
+        EditText input = new EditText(this);
+        input.setHint("Reason for cancellation");
+        input.setPadding(48, 16, 48, 16);
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Cancel Trip")
+            .setMessage("Passengers will be notified of the reason.")
+            .setView(input)
+            .setPositiveButton("Cancel Trip", (d, w) -> {
+                String reason = input.getText().toString().trim();
+                if (reason.isEmpty()) reason = "Cancelled by driver";
+                Map<String, Object> body = new HashMap<>();
+                body.put("reason", reason);
+                RetrofitClient.getApiService().cancelTrip(tripId, body).enqueue(new Callback<Map<String, Object>>() {
+                    @Override
+                    public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                        if (response.isSuccessful()) {
+                            Toast.makeText(MapViewActivity.this, "Trip cancelled", Toast.LENGTH_SHORT).show();
+                            finish();
+                        } else {
+                            Toast.makeText(MapViewActivity.this, "Failed to cancel", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    @Override
+                    public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                        Toast.makeText(MapViewActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            })
+            .setNegativeButton("Back", null)
+            .show();
     }
 
     private void toggleSimulation() {

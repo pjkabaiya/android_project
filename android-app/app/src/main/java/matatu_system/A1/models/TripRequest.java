@@ -11,6 +11,7 @@ public class TripRequest {
     private double passengerLat;
     private double passengerLng;
     private String status;
+    private String cancellationReason;
 
     public TripRequest() {}
 
@@ -28,6 +29,7 @@ public class TripRequest {
     public double getPassengerLat() { return passengerLat; }
     public double getPassengerLng() { return passengerLng; }
     public String getStatus() { return status; }
+    public String getCancellationReason() { return cancellationReason; }
 
     public void setId(String id) { this.id = id; }
     public void setTripId(String tripId) { this.tripId = tripId; }

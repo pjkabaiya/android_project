@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 const User = require('../models/User');
+const Trip = require('../models/Trip');
+const TripRequest = require('../models/TripRequest');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'smart-matatu-jwt-secret-dev';
 
@@ -80,6 +82,37 @@ router.get('/me', async (req, res) => {
     const user = await User.findOne({ firebaseUid: decoded.uid });
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
+  } catch (err) {
+    res.status(401).json({ error: 'invalid token' });
+  }
+});
+
+// Get enhanced user profile with stats
+router.get('/profile', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'token required' });
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findOne({ firebaseUid: decoded.uid });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const profile = { name: user.name, email: user.email, role: user.role, memberSince: user.createdAt };
+
+    if (user.role === 'driver') {
+      const trips = await Trip.find({ driverId: { $regex: '^' + user.firebaseUid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', $options: 'i' } });
+      profile.totalTrips = trips.length;
+      const tripIds = trips.map(t => t._id);
+      const accepted = await TripRequest.countDocuments({ tripId: { $in: tripIds }, status: 'ACCEPTED' });
+      profile.totalPassengers = accepted;
+    } else {
+      const requests = await TripRequest.find({ passengerId: { $regex: '^' + user.firebaseUid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', $options: 'i' } });
+      profile.totalRequests = requests.length;
+      profile.accepted = requests.filter(r => r.status === 'ACCEPTED').length;
+      profile.rejected = requests.filter(r => r.status === 'REJECTED').length;
+      profile.cancelled = requests.filter(r => r.status === 'CANCELLED').length;
+    }
+
+    res.json(profile);
   } catch (err) {
     res.status(401).json({ error: 'invalid token' });
   }

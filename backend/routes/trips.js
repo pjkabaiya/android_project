@@ -44,8 +44,6 @@ router.get('/requests', async (req, res) => {
     // By default return only waiting requests (queue)
     if (!req.query.includeProcessed || req.query.includeProcessed !== 'true') {
       filter.status = 'WAITING';
-    } else {
-      filter.status = { $ne: 'CANCELLED' };
     }
 
     let query = TripRequest.find(filter);
@@ -93,6 +91,30 @@ router.patch('/requests/:id', async (req, res) => {
     }
 
     res.json(request);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Cancel a trip with a reason
+router.post('/:id/cancel', async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const trip = await Trip.findByIdAndUpdate(req.params.id, { status: 'CANCELLED', cancellationReason: reason || 'No reason provided' }, { new: true });
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+
+    // Cancel all pending requests for this trip with the reason
+    await TripRequest.updateMany(
+      { tripId: req.params.id, status: { $in: ['WAITING', 'ACCEPTED'] } },
+      { status: 'CANCELLED', cancellationReason: trip.cancellationReason }
+    );
+
+    const io = req.app && req.app.get && req.app.get('io');
+    if (io) {
+      io.to(`trip_${req.params.id}`).emit('trip-cancelled', { tripId: req.params.id, reason: trip.cancellationReason });
+    }
+
+    res.json({ ok: true, trip });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

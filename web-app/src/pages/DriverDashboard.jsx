@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { searchTrips, createTrip, updateTrip } from '../api';
+import { searchTrips, createTrip, cancelTrip } from '../api';
 
 function getUser() {
   const s = localStorage.getItem('auth_user');
@@ -50,9 +50,10 @@ export default function DriverDashboard() {
   }
 
   async function deleteTrip(id) {
-    if (!confirm('Delete this trip?')) return;
+    const reason = prompt('Reason for cancelling this trip:');
+    if (reason === null) return;
     try {
-      await updateTrip(id, { status: 'CANCELLED' });
+      await cancelTrip(id, reason.trim() || 'Cancelled by driver');
       loadTrips();
     } catch {}
   }
@@ -62,6 +63,7 @@ export default function DriverDashboard() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
         <span style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--yellow)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 'bold', color: 'var(--black)', fontFamily: 'serif' }}>SM</span>
         <h1 style={{ fontSize: 24, color: 'var(--black)', flex: 1 }}>Driver Dashboard</h1>
+        <button className="btn btn-tonal btn-small" onClick={() => navigate('/profile')}>Profile</button>
         <button className="btn btn-danger btn-small" onClick={logout}>Logout</button>
       </div>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16 }}>{user?.email || ''}</p>

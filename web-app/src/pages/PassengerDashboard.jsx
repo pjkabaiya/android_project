@@ -85,6 +85,7 @@ export default function PassengerDashboard() {
     switch (status) {
       case 'ACCEPTED': return { background: '#43A047', color: '#fff' };
       case 'REJECTED': return { background: '#D32F2F', color: '#fff' };
+      case 'CANCELLED': return { background: '#757575', color: '#fff' };
       case 'WAITING': return { background: '#FFC107', color: '#212121' };
       default: return { background: '#757575', color: '#fff' };
     }
@@ -97,6 +98,7 @@ export default function PassengerDashboard() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
         <span style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--yellow)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 'bold', color: 'var(--black)', fontFamily: 'serif' }}>SM</span>
         <h1 style={{ fontSize: 24, color: 'var(--black)', flex: 1 }}>Find Your Ride</h1>
+        <button className="btn btn-tonal btn-small" onClick={() => navigate('/profile')}>Profile</button>
         <button className="btn btn-danger btn-small" onClick={logout}>Logout</button>
       </div>
       <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 16 }}>{user?.email || ''}</p>
@@ -104,21 +106,23 @@ export default function PassengerDashboard() {
       {myRequests.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <h3 style={{ fontSize: 16, marginBottom: 8, color: 'var(--text-primary)' }}>
-            My Active Requests ({myRequests.length})
+            My Requests ({myRequests.length})
           </h3>
           {loadingRequests && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
           {myRequests.map(req => {
             const trip = req.tripId && typeof req.tripId === 'object' ? req.tripId : null;
+            const cancelled = req.status === 'CANCELLED';
+            const cancelReason = trip?.cancellationReason;
             return (
-              <div key={req.id} className="card" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ flex: 1, cursor: 'pointer' }}
-                  onClick={() => goToMap(trip ? trip.id : req.tripId, trip?.numberPlate || '', trip?.route || '')}>
+              <div key={req.id} className="card" style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, opacity: cancelled ? 0.7 : 1 }}>
+                <div style={{ flex: 1, cursor: cancelled ? 'default' : 'pointer' }}
+                  onClick={() => !cancelled && goToMap(trip ? trip.id : req.tripId, trip?.numberPlate || '', trip?.route || '')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 28, height: 28, borderRadius: 4, background: '#1565C0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 'bold', color: 'white' }}>M</span>
+                    <span style={{ width: 28, height: 28, borderRadius: 4, background: cancelled ? '#757575' : '#1565C0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 'bold', color: 'white' }}>M</span>
                     <div style={{ flex: 1 }}>
                       <strong>{trip ? `${trip.numberPlate}  |  ${trip.route}` : 'Loading...'}</strong>
-                      <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                        Pickup: {req.pickupPoint || 'set on map'}
+                      <p style={{ fontSize: 12, color: cancelled ? 'var(--red)' : 'var(--text-secondary)' }}>
+                        {cancelled && cancelReason ? `Cancelled: ${cancelReason}` : `Pickup: ${req.pickupPoint || 'set on map'}`}
                       </p>
                     </div>
                   </div>

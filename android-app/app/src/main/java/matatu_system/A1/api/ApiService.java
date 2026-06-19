@@ -47,4 +47,7 @@ public interface ApiService {
 
     @PATCH("api/trips/requests/{id}")
     Call<TripRequest> updateRequestStatus(@Path("id") String requestId, @Body Map<String, Object> updates);
+
+    @POST("api/trips/{id}/cancel")
+    Call<Map<String, Object>> cancelTrip(@Path("id") String tripId, @Body Map<String, Object> body);
 }

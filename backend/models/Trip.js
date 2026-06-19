@@ -12,6 +12,7 @@ const TripSchema = new mongoose.Schema({
   routeEncoded: { type: String },
   availableSeats: { type: Number, default: 14 },
   status: { type: String, enum: ['ON_ROUTE', 'COMPLETED', 'CANCELLED'], default: 'ON_ROUTE' },
+  cancellationReason: { type: String },
   driverId: { type: String },
   currentLocation: {
     lat: { type: Number },

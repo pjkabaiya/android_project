@@ -78,3 +78,11 @@ export function logIn(email, password) {
 export function getMe() {
   return req('/auth/me');
 }
+
+export function getProfile() {
+  return req('/auth/profile');
+}
+
+export function cancelTrip(id, reason) {
+  return req(`/trips/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+}

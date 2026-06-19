@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -133,21 +134,36 @@ public class DriverActivity extends AppCompatActivity {
     }
 
     private void deleteTrip(String tripId) {
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "CANCELLED");
-        RetrofitClient.getApiService().updateTrip(tripId, updates).enqueue(new Callback<Trip>() {
-            @Override
-            public void onResponse(Call<Trip> call, Response<Trip> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(DriverActivity.this, "Trip deleted", Toast.LENGTH_SHORT).show();
-                    loadDriverTrips();
-                }
-            }
-            @Override
-            public void onFailure(Call<Trip> call, Throwable t) {
-                Toast.makeText(DriverActivity.this, "Failed to delete", Toast.LENGTH_SHORT).show();
-            }
-        });
+        EditText input = new EditText(this);
+        input.setHint("Reason for cancellation");
+        input.setPadding(48, 16, 48, 16);
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Cancel Trip")
+            .setMessage("Passengers will be notified of the reason.")
+            .setView(input)
+            .setPositiveButton("Cancel Trip", (d, w) -> {
+                String reason = input.getText().toString().trim();
+                if (reason.isEmpty()) reason = "Cancelled by driver";
+                Map<String, Object> body = new HashMap<>();
+                body.put("reason", reason);
+                RetrofitClient.getApiService().cancelTrip(tripId, body).enqueue(new Callback<Map<String, Object>>() {
+                    @Override
+                    public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                        if (response.isSuccessful()) {
+                            Toast.makeText(DriverActivity.this, "Trip cancelled", Toast.LENGTH_SHORT).show();
+                            loadDriverTrips();
+                        } else {
+                            Toast.makeText(DriverActivity.this, "Failed to cancel", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                    @Override
+                    public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                        Toast.makeText(DriverActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            })
+            .setNegativeButton("Back", null)
+            .show();
     }
 
     private void showTripDetailsDialog(Trip trip) {

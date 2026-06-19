@@ -187,15 +187,26 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             TextView tvStatus = convertView.findViewById(R.id.tvStatus);
             ImageButton btnDelete = convertView.findViewById(R.id.btnDeleteRequest);
 
+            String status = req.getStatus() != null ? req.getStatus() : "WAITING";
+            boolean cancelled = "CANCELLED".equals(status);
+            String cancelReason = req.getCancellationReason();
+
+            convertView.setAlpha(cancelled ? 0.6f : 1f);
+
             if (trip != null) {
                 tvTitle.setText(trip.getNumberPlate() + "  |  " + trip.getRoute());
             } else {
                 tvTitle.setText("Loading trip info...");
             }
 
-            tvSubtitle.setText("Pickup: " + (req.getPickupPoint() != null ? req.getPickupPoint() : "set on map"));
+            if (cancelled && cancelReason != null && !cancelReason.isEmpty()) {
+                tvSubtitle.setText("Cancelled: " + cancelReason);
+                tvSubtitle.setTextColor(0xFFD32F2F);
+            } else {
+                tvSubtitle.setText("Pickup: " + (req.getPickupPoint() != null ? req.getPickupPoint() : "set on map"));
+                tvSubtitle.setTextColor(0xFF757575);
+            }
 
-            String status = req.getStatus() != null ? req.getStatus() : "WAITING";
             tvStatus.setText(status);
 
             GradientDrawable bg = new GradientDrawable();
@@ -216,6 +227,7 @@ public class PassengerDashboardActivity extends AppCompatActivity {
             }
             tvStatus.setBackground(bg);
 
+            btnDelete.setVisibility(cancelled ? View.GONE : View.VISIBLE);
             btnDelete.setOnClickListener(v -> cancelRequest(req, position));
 
             return convertView;

@@ -12,6 +12,7 @@ public class Trip {
     private int availableSeats;
     private String status;
     private String driverId;
+    private String cancellationReason;
     private List<RoutePoint> routePath;
 
     public Trip() {}
@@ -30,6 +31,7 @@ public class Trip {
     public int getAvailableSeats() { return availableSeats; }
     public String getStatus() { return status; }
     public String getDriverId() { return driverId; }
+    public String getCancellationReason() { return cancellationReason; }
     public List<RoutePoint> getRoutePath() { return routePath; }
 
     public void setAvailableSeats(int availableSeats) { this.availableSeats = availableSeats; }
